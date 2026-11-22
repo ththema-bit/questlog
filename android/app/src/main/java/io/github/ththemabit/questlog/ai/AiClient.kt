@@ -26,7 +26,10 @@ import java.net.URL
 import java.net.UnknownHostException
 import javax.net.ssl.SSLException
 
-class AiException(message: String, cause: Throwable? = null) : Exception(message, cause)
+open class AiException(message: String, cause: Throwable? = null) : Exception(message, cause)
+
+/** Antwortlänge plus Anfrage passen nicht in den Kontext des Modells (vLLM lehnt das ab, statt zu kürzen). */
+private class ContextLimit(message: String) : AiException(message)
 
 data class ChatMessage(val role: String, val content: String)
 
@@ -79,21 +82,25 @@ class AiClient(
         return c
     }
 
-    private fun errorText(conn: HttpURLConnection, code: Int): String {
+    private fun error(conn: HttpURLConnection, code: Int): AiException {
         val body = runCatching { conn.errorStream?.bufferedReader()?.readText() }.getOrNull().orEmpty()
         val msg = runCatching {
-            val e = json.parseToJsonElement(body).jsonObject["error"]
-            when (e) {
+            val root = json.parseToJsonElement(body).jsonObject
+            when (val e = root["error"]) {
                 is JsonObject -> e["message"]?.jsonPrimitive?.contentOrNull
                 is JsonPrimitive -> e.contentOrNull
-                else -> null
+                // ältere vLLM-Versionen: {"object":"error","message":"…"}
+                else -> root["message"]?.jsonPrimitive?.contentOrNull
             }
         }.getOrNull() ?: body.take(160)
-        return when (code) {
+        val text = when (code) {
             401, 403 -> "Zugriff verweigert ($code). Stimmt der API-Schlüssel?"
             404 -> "Nicht gefunden (404). Stimmt die Adresse oder der Modellname? $msg".trim()
             else -> "Server antwortet mit $code. $msg".trim()
         }
+        val tooLong = code == 400 && msg.contains("context", ignoreCase = true) &&
+            (msg.contains("maximum", ignoreCase = true) || msg.contains("exceed", ignoreCase = true))
+        return if (tooLong) ContextLimit(text) else AiException(text)
     }
 
     private fun translate(e: Exception): AiException = when (e) {
@@ -136,7 +143,7 @@ class AiClient(
         if (base.isEmpty()) throw AiException("Keine Adresse eingetragen.")
         return connection("$base/models", "GET") { conn ->
             val code = conn.responseCode
-            if (code !in 200..299) throw AiException(errorText(conn, code))
+            if (code !in 200..299) throw error(conn, code)
             val root = json.parseToJsonElement(conn.inputStream.bufferedReader().readText()).jsonObject
             val data = root["data"] as? JsonArray
             val list = data?.mapNotNull { (it as? JsonObject)?.get("id")?.jsonPrimitive?.contentOrNull }
@@ -148,14 +155,23 @@ class AiClient(
 
     /**
      * Ein Chat-Aufruf. Mit [onDelta] wird gestreamt und der bisher sichtbare Text laufend gemeldet.
-     * Liefert den fertigen Text ohne Denk-Blöcke.
+     * Liefert den fertigen Text ohne Denk-Blöcke. Ist der Kontext des Modells zu klein für
+     * [maxTokens] (vLLM mit kleinem --max-model-len), wird einmal ohne Obergrenze nachgefragt,
+     * dann nimmt der Server, was übrig ist.
      */
     suspend fun chat(
         messages: List<ChatMessage>,
-        maxTokens: Int = 800,
+        maxTokens: Int? = 800,
         temperature: Double = 0.8,
         onDelta: ((String) -> Unit)? = null,
-    ): String {
+    ): String = try {
+        request(messages, maxTokens, temperature, onDelta)
+    } catch (e: ContextLimit) {
+        if (maxTokens == null) throw AiException(e.message ?: "Kontext zu klein.")
+        request(messages, null, temperature, onDelta)
+    }
+
+    private suspend fun request(messages: List<ChatMessage>, maxTokens: Int?, temperature: Double, onDelta: ((String) -> Unit)?): String {
         if (base.isEmpty()) throw AiException("Keine Adresse eingetragen.")
         if (model.isBlank()) throw AiException("Kein Modell ausgewählt.")
         val stream = onDelta != null
@@ -163,14 +179,14 @@ class AiClient(
             put("model", model)
             putJsonArray("messages") { messages.forEach { m -> addJsonObject { put("role", m.role); put("content", m.content) } } }
             put("temperature", temperature)
-            put("max_tokens", maxTokens)
+            if (maxTokens != null) put("max_tokens", maxTokens)
             put("stream", stream)
         }
         return connection("$base/chat/completions", "POST") { conn ->
             conn.doOutput = true
             conn.outputStream.use { it.write(payload.toString().toByteArray()) }
             val code = conn.responseCode
-            if (code !in 200..299) throw AiException(errorText(conn, code))
+            if (code !in 200..299) throw error(conn, code)
             if (!stream) {
                 val body = conn.inputStream.bufferedReader().readText()
                 val content = json.parseToJsonElement(body).jsonObject["choices"]?.jsonArray?.firstOrNull()

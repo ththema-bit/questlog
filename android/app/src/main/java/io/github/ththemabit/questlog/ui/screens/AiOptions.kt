@@ -42,6 +42,7 @@ private val servers = listOf(
     Server("Ollama", 11434, "Ollama: Auf der Box OLLAMA_HOST=0.0.0.0 setzen, damit das Handy sie im Heimnetz erreicht. Port 11434."),
     Server("LM Studio", 1234, "LM Studio: Server starten und „Serve on Local Network“ einschalten. Port 1234."),
     Server("llama.cpp", 8080, "llama.cpp: llama-server mit --host 0.0.0.0 starten. Port 8080."),
+    Server("vLLM", 8000, "vLLM: vllm serve lauscht auf Port 8000. Mit --api-key gestartet? Dann den Schlüssel unten eintragen. Das Modell heißt wie beim Start (oder --served-model-name)."),
     Server("Cloud", null, "Cloud: die volle Adresse des Anbieters (mit /v1) und den API-Schlüssel eintragen."),
 )
 
@@ -99,7 +100,7 @@ fun AiSection(state: AppState, act: Actions, nav: Nav, ui: UiController, preview
         probe?.models?.takeIf { it.isNotEmpty() }?.let { models ->
             ChipRow(models.take(16), { it == model }, { it }) { model = it; fx.tap() }
         }
-        PixelField(key, { key = it }, "nur für Cloud-Dienste nötig", label = "API-Schlüssel", secret = true)
+        PixelField(key, { key = it }, "nur wenn der Server einen verlangt", label = "API-Schlüssel", secret = true)
         PixelButton(if (testing) "Teste …" else "Verbindung testen", {
             testing = true
             probe = null

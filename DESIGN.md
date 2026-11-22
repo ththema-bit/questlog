@@ -103,7 +103,9 @@ Regeln:
 
 Code: `ai/AiClient.kt` (HTTP, Streaming, Fehlermeldungen), `ai/GameMaster.kt` (Prompts und Auslesen), `ai/AiService.kt` (Hintergrund und Gespräch), `ui/screens/Master.kt` (Gespräch), `ui/screens/AiOptions.kt` (Einstellungen). Tests gegen einen Fake-Server: `AiClientTest`, `GameMasterTest`, `AiServiceTest`. Gegen den echten Server: `LiveAiTest` (siehe `android/README.md`).
 
-**AI-Box einrichten (Ollama):** Ollama so starten, dass es im Heimnetz lauscht (`OLLAMA_HOST=0.0.0.0`), ein Modell laden (`ollama pull …`), in der App die Adresse der Box mit Port 11434 eintragen und „Verbindung testen“. Gut geeignet sind Modelle mit etwa 3 bis 14 Milliarden Parametern, die ordentlich Deutsch schreiben. Denkende Modelle funktionieren auch, brauchen aber länger.
+**AI-Box einrichten (Ollama):** Ollama so starten, dass es im Heimnetz lauscht (`OLLAMA_HOST=0.0.0.0`), ein Modell laden (`ollama pull …`), in der App die Adresse der Box mit Port 11434 eintragen und „Verbindung testen“.
+
+**AI-Box mit vLLM:** `vllm serve <Modell> --host 0.0.0.0` (Port 8000), in der App „vLLM“ wählen und die Adresse der Box eintragen. Das Modell heißt in der Liste so wie beim Start (oder wie `--served-model-name`). Mit `--api-key` gestartet: denselben Schlüssel in der App eintragen. vLLM lehnt Anfragen ab, deren Antwortlänge nicht mehr in den Kontext passt (`--max-model-len`); die App fragt dann automatisch noch einmal ohne Längenlimit. Gut geeignet sind Modelle mit etwa 3 bis 14 Milliarden Parametern, die ordentlich Deutsch schreiben. Denkende Modelle funktionieren auch, brauchen aber länger.
 
 Später, weiterhin optional:
 

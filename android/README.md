@@ -18,6 +18,8 @@ Voraussetzungen: JDK 17 oder neuer und das Android-SDK (Plattform 36). Am einfac
   QUESTLOG_AI_URL=192.168.178.65:11434 QUESTLOG_AI_MODEL=qwen2.5:7b ./gradlew :app:testDebugUnitTest --tests '*LiveAiTest'
   ```
 
+  Mit vLLM ist der Port 8000 und das Modell heißt wie beim Start, z. B. `QUESTLOG_AI_URL=192.168.178.65:8000 QUESTLOG_AI_MODEL=Qwen/Qwen2.5-7B-Instruct`.
+
   Unter Windows:
 
   ```bat

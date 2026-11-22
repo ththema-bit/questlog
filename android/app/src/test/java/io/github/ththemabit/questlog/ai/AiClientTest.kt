@@ -25,6 +25,8 @@ class AiClientTest {
     private lateinit var server: HttpServer
     private val requests: MutableList<Triple<String, String, String?>> = Collections.synchronizedList(ArrayList())
     @Volatile private var reply: (String) -> Reply = { Reply(200, "application/json", "{}") }
+    /** Antwort abhängig vom Inhalt der Anfrage (Pfad, Body) */
+    @Volatile private var replyFor: ((String, String) -> Reply)? = null
 
     @Before
     fun start() {
@@ -33,7 +35,7 @@ class AiClientTest {
         server.createContext("/") { ex ->
             val body = ex.requestBody.bufferedReader().readText()
             requests += Triple(ex.requestURI.path, body, ex.requestHeaders.getFirst("Authorization"))
-            val r = reply(ex.requestURI.path)
+            val r = replyFor?.invoke(ex.requestURI.path, body) ?: reply(ex.requestURI.path)
             if (r.delayMs > 0) Thread.sleep(r.delayMs)
             val bytes = r.body.toByteArray()
             ex.responseHeaders.add("Content-Type", r.type)
@@ -122,6 +124,24 @@ class AiClientTest {
         expectError("keinen Text") { AiClient(address, "m").chat(listOf(ChatMessage("user", "x"))) }
         expectError("Modell") { AiClient(address, "").chat(listOf(ChatMessage("user", "x"))) }
         expectError("Adresse") { AiClient("", "m").models() }
+    }
+
+    @Test
+    fun vllmWithSmallContextGetsASecondTryWithoutLimit() = runBlocking {
+        // vLLM lehnt ab, wenn Anfrage + max_tokens nicht in --max-model-len passen
+        replyFor = { _, body ->
+            if (body.contains("max_tokens")) Reply(400, "application/json",
+                """{"object":"error","message":"This model's maximum context length is 4096 tokens. However, you requested 4700 tokens (2100 in the messages, 2600 in the completion). Please reduce the length of the messages or completion.","type":"BadRequestError","param":null,"code":400}""")
+            else Reply(200, "application/json", """{"choices":[{"message":{"content":"Passt doch."}}]}""")
+        }
+        assertEquals("Passt doch.", AiClient(address, "Qwen/Qwen2.5-7B-Instruct").chat(listOf(ChatMessage("user", "x")), maxTokens = 2600))
+        assertEquals(2, requests.size)
+        assertTrue(requests[0].second.contains("\"max_tokens\":2600"))
+        assertFalse(requests[1].second.contains("max_tokens"))
+        // Andere Fehler im alten vLLM-Format werden lesbar gemeldet und nicht wiederholt
+        replyFor = { _, _ -> Reply(400, "application/json", """{"object":"error","message":"The model `xyz` does not exist.","type":"NotFoundError","code":400}""") }
+        expectError("The model `xyz` does not exist.") { AiClient(address, "xyz").chat(listOf(ChatMessage("user", "x"))) }
+        assertEquals(3, requests.size)
     }
 
     @Test
