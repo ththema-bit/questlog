@@ -50,6 +50,7 @@ import io.github.ththemabit.questlog.ui.pixel.IconTap
 import io.github.ththemabit.questlog.ui.pixel.LocalPx
 import io.github.ththemabit.questlog.ui.pixel.PixelBar
 import io.github.ththemabit.questlog.ui.pixel.PixelIcon
+import io.github.ththemabit.questlog.ui.pixel.H
 import io.github.ththemabit.questlog.ui.pixel.T
 import io.github.ththemabit.questlog.ui.pixel.Tag
 import io.github.ththemabit.questlog.ui.pixel.bevel
@@ -223,7 +224,7 @@ fun BossCard(qs: QuestState, onOpen: () -> Unit, modifier: Modifier = Modifier) 
             Spacer(Modifier.width(10.dp))
             Column(Modifier.weight(1f)) {
                 T("BOSS", Q.type.label, color = Pal.blood0)
-                T(q.title, Q.type.heading, color = Pal.bone, maxLines = 2)
+                H(q.title, Q.type.heading, color = Pal.bone, maxLines = 2)
             }
             T("${qs.bossHpLeft}/${qs.bossHpMax}", Q.type.number, color = Pal.blood0)
         }
@@ -251,7 +252,7 @@ fun StatusHeader(game: GameState, modifier: Modifier = Modifier) {
             Spacer(Modifier.width(10.dp))
             Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                 Row(verticalAlignment = Alignment.Bottom) {
-                    T("Stufe ${p.level}", Q.type.heading, color = Pal.gold0)
+                    H("Stufe ${p.level}", Q.type.heading, color = Pal.gold0)
                     Spacer(Modifier.width(8.dp))
                     T(p.rank.name.uppercase(), Q.type.label, Modifier.padding(bottom = 4.dp).weight(1f), color = Pal.boneDim, maxLines = 1)
                     T("${Fmt.n(p.xp)} XP", Q.type.small, Modifier.padding(bottom = 2.dp), color = Pal.boneDim)
@@ -408,7 +409,7 @@ fun BottomNav(current: Int, onSelect: (Int) -> Unit, modifier: Modifier = Modifi
 fun ScreenTitle(title: String, onBack: (() -> Unit)?, modifier: Modifier = Modifier, actions: @Composable () -> Unit = {}) {
     Row(modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 6.dp), verticalAlignment = Alignment.CenterVertically) {
         if (onBack != null) IconTap("back", "Zurück", onBack, size = 28.dp) else Spacer(Modifier.width(8.dp))
-        T(title, Q.type.title, Modifier.weight(1f), color = Pal.gold0, maxLines = 1)
+        H(title, Q.type.title, Modifier.weight(1f), color = Pal.gold0, maxLines = 1)
         actions()
     }
 }
@@ -421,7 +422,7 @@ fun EmptyHint(icon: String, title: String, text: String, modifier: Modifier = Mo
         verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         PixelIcon(icon, 48.dp)
-        T(title, Q.type.heading, color = Pal.ink, align = TextAlign.Center)
+        H(title, Q.type.heading, color = Pal.ink, align = TextAlign.Center)
         T(text, Q.type.body, color = Pal.inkSoft, align = TextAlign.Center)
         content()
     }

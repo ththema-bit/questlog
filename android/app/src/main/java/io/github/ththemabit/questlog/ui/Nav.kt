@@ -30,6 +30,8 @@ sealed interface Route {
     data class Letter(val id: String) : Route
     data class Credits(val questId: String) : Route
     data object Templates : Route
+    /** Gespräch mit dem KI-Spielleiter. [send]: [prefill] gleich abschicken. */
+    data class Master(val prefill: String = "", val send: Boolean = false) : Route
 
     val isTab: Boolean get() = this == Board || this == Chronicle || this == Glory || this == Treasury || this == Options
 }
@@ -38,6 +40,8 @@ sealed interface Route {
 class Nav {
     var tab by mutableStateOf<Route>(Route.Board)
     val stack = mutableStateListOf<Route>()
+    /** Abschnitt, zu dem ein Tab beim Öffnen springen soll (z. B. „ai“ in den Optionen) */
+    var focus by mutableStateOf<String?>(null)
     val current: Route get() = stack.lastOrNull() ?: tab
     val canBack: Boolean get() = stack.isNotEmpty() || tab != Route.Board
 

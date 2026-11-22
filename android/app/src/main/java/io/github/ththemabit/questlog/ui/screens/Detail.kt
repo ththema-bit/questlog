@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -25,6 +26,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
+import io.github.ththemabit.questlog.ai.GameMaster
 import io.github.ththemabit.questlog.core.Categories
 import io.github.ththemabit.questlog.core.Done
 import io.github.ththemabit.questlog.core.Hit
@@ -35,6 +37,7 @@ import io.github.ththemabit.questlog.core.WindowStatus
 import io.github.ththemabit.questlog.data.AppState
 import io.github.ththemabit.questlog.ui.Actions
 import io.github.ththemabit.questlog.ui.Fmt
+import io.github.ththemabit.questlog.ui.LocalAi
 import io.github.ththemabit.questlog.ui.LocalFx
 import io.github.ththemabit.questlog.ui.Nav
 import io.github.ththemabit.questlog.ui.Overlay
@@ -49,6 +52,7 @@ import io.github.ththemabit.questlog.ui.pixel.PixelButton
 import io.github.ththemabit.questlog.ui.pixel.PixelIcon
 import io.github.ththemabit.questlog.ui.pixel.ScrollPanel
 import io.github.ththemabit.questlog.ui.pixel.SectionTitle
+import io.github.ththemabit.questlog.ui.pixel.H
 import io.github.ththemabit.questlog.ui.pixel.T
 import io.github.ththemabit.questlog.ui.pixel.Tag
 import io.github.ththemabit.questlog.ui.pixel.bevel
@@ -79,6 +83,11 @@ fun DetailScreen(questId: String, state: AppState, act: Actions, nav: Nav, ui: U
     val unlocked: (String) -> Boolean = { key -> (Modifiers.of(key)?.unlockLevel ?: 99) <= level }
     val hour = LocalTime.now().hour
     val wagerFree = game.wager == null || game.wager.resolved
+    // KI-Spielleiter: eigene Texte zu genau dieser Quest, falls schon geschrieben
+    val ai = LocalAi.current
+    val aiCfg = state.save.settings.ai
+    val lore = if (aiCfg.ready && aiCfg.questTexts) GameMaster.textsFor(state.save, q) else null
+    LaunchedEffect(q.id, aiCfg.ready, aiCfg.questTexts) { if (aiCfg.ready && aiCfg.questTexts) ai.focus(q.id) }
 
     LazyColumn(
         Modifier.fillMaxSize(),
@@ -87,6 +96,9 @@ fun DetailScreen(questId: String, state: AppState, act: Actions, nav: Nav, ui: U
     ) {
         item {
             ScreenTitle(if (q.boss) "Boss" else "Quest", onBack = { nav.back() }) {
+                if (aiCfg.ready && aiCfg.forge) io.github.ththemabit.questlog.ui.pixel.IconTap("orb", "Mit dem Spielleiter besprechen", {
+                    nav.go(Route.Master(prefill = "Zur Quest „${q.title}“: "))
+                })
                 io.github.ththemabit.questlog.ui.pixel.IconTap("quill", "Bearbeiten", { nav.go(Route.Edit(q.id)) })
             }
         }
@@ -99,7 +111,14 @@ fun DetailScreen(questId: String, state: AppState, act: Actions, nav: Nav, ui: U
                         T(Categories.of(q.category).name.uppercase(), Q.type.label, Modifier.weight(1f), color = Pal.inkSoft)
                         if (qs.isBounty) Tag("Kopfgeld ×2", Frames.gold, Pal.ink, icon = "target")
                     }
-                    T(q.title, Q.type.title, color = Pal.ink)
+                    H(q.title, Q.type.title, color = Pal.ink)
+                    lore?.intro?.let { intro ->
+                        Row(verticalAlignment = Alignment.Top) {
+                            PixelIcon("orb", 16.dp, Modifier.padding(top = 2.dp))
+                            Spacer(Modifier.width(8.dp))
+                            T(intro, Q.type.body, color = Pal.wood0)
+                        }
+                    }
                     T("${Fmt.rhythm(q.minDays, q.maxDays)} · ${Fmt.effort(q.effortMin)} · Wichtigkeit ${q.importance} · Überwindung ${q.dread}", Q.type.small, color = Pal.inkSoft)
                     T(Fmt.window(qs), Q.type.bodyBold, color = when (qs.status) {
                         WindowStatus.OVERDUE -> Pal.blood1
@@ -123,6 +142,15 @@ fun DetailScreen(questId: String, state: AppState, act: Actions, nav: Nav, ui: U
             }
         }
 
+        if (q.boss) (lore?.bossIntro ?: Story.bossIntro(q)).let { text ->
+            item {
+                Row(Modifier.fillMaxWidth().stonePanel(Frames.blood).padding(14.dp), verticalAlignment = Alignment.CenterVertically) {
+                    PixelIcon("skull", 28.dp)
+                    Spacer(Modifier.width(10.dp))
+                    T(text, Q.type.body, Modifier.weight(1f), color = Pal.bone)
+                }
+            }
+        }
         if (q.subtasks.isNotEmpty()) {
             item { SectionTitle(if (q.boss) "Treffer landen" else "Teilaufgaben", icon = if (q.boss) "sword" else "check", count = q.subtasks.size) }
             items(q.subtasks, key = { it.id }) { st ->

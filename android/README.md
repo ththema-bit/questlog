@@ -1,6 +1,6 @@
 # Questlog – Android-App
 
-Native App in Kotlin mit Jetpack Compose. Kein WebView, keine Werbung, keine Internet-Berechtigung.
+Native App in Kotlin mit Jetpack Compose. Kein WebView, keine Werbung, kein Tracking. Die Internet-Berechtigung braucht nur der optionale KI-Spielleiter; er verbindet sich ausschließlich mit dem Server, der unter Optionen eingetragen ist.
 
 ## Bauen und ausprobieren
 
@@ -11,7 +11,22 @@ Voraussetzungen: JDK 17 oder neuer und das Android-SDK (Plattform 36). Am einfac
 
 ## Tests
 
-- `./gradlew testDebugUnitTest` – Engine-Tests (Punkte, Fenster, Glut, Serien, Pause, Wetten, Bosse, Schnelleingabe, Erinnerungen) und Screenshot-Tests.
+- `./gradlew testDebugUnitTest` – Engine-Tests (Punkte, Fenster, Glut, Serien, Pause, Wetten, Bosse, Schnelleingabe, Erinnerungen), KI-Tests gegen einen Fake-Server (Client, Streaming, Abbruch, Auslesen unsauberer Antworten, Hintergrund-Dienst von Anfang bis Ende) und Screenshot-Tests.
+- KI gegen den echten Server prüfen (sonst übersprungen):
+
+  ```bash
+  QUESTLOG_AI_URL=192.168.178.65:11434 QUESTLOG_AI_MODEL=qwen2.5:7b ./gradlew :app:testDebugUnitTest --tests '*LiveAiTest'
+  ```
+
+  Unter Windows:
+
+  ```bat
+  set QUESTLOG_AI_URL=192.168.178.65:11434
+  set QUESTLOG_AI_MODEL=qwen2.5:7b
+  gradlew :app:testDebugUnitTest --tests "*LiveAiTest"
+  ```
+
+  Adresse und Modell an die eigene Box anpassen, für Cloud-Dienste zusätzlich `QUESTLOG_AI_KEY`. Was das Modell geantwortet hat und was die App daraus liest, steht im Testbericht `app/build/reports/tests/testDebugUnitTest/index.html`.
 - `./gradlew recordPaparazziDebug` – Screenshots aller wichtigen Screens neu erzeugen (Paparazzi, ohne Gerät). Sie liegen in `app/src/test/snapshots/images` und dienen auch als Store-Screenshots.
 - `./gradlew verifyPaparazziDebug` – prüft, ob sich die Optik ungewollt verändert hat.
 
@@ -20,6 +35,7 @@ Voraussetzungen: JDK 17 oder neuer und das Android-SDK (Plattform 36). Am einfac
 | Ordner (`app/src/main/java/io/github/ththemabit/questlog/`) | Inhalt |
 |---|---|
 | `core/` | Reines Kotlin ohne Android: Datenmodell, Regeln, Engine (rechnet alles aus dem Ereignis-Protokoll nach), Meilensteine, Vorlagen, Feiertage, Erzähler und Schnelleingabe |
+| `ai/` | Optionaler KI-Spielleiter: Client für OpenAI-kompatible Server, Prompts und Auslesen der Antworten, Hintergrund-Dienst und Gespräch |
 | `data/` | Speichern (JSON, atomar, mit Sicherungskopie), Aktionen, Demo-Spielstand |
 | `ui/pixel/` | Pixel-Baukasten: Rahmen, Pergament, Schriftrollen, Knöpfe, Balken, Icons |
 | `ui/theme/` | Farben und Schriften |

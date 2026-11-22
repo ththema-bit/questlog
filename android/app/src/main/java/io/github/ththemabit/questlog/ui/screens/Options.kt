@@ -19,9 +19,11 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateListOf
@@ -54,11 +56,15 @@ import io.github.ththemabit.questlog.ui.pixel.Btn
 import io.github.ththemabit.questlog.ui.pixel.PixelButton
 import io.github.ththemabit.questlog.ui.pixel.PixelIcon
 import io.github.ththemabit.questlog.ui.pixel.ScrollPanel
+import io.github.ththemabit.questlog.ui.pixel.H
 import io.github.ththemabit.questlog.ui.pixel.T
 import io.github.ththemabit.questlog.ui.pixel.parchmentCard
 import io.github.ththemabit.questlog.ui.theme.Pal
 import io.github.ththemabit.questlog.ui.theme.Q
 import java.time.LocalDate
+
+/** Position des KI-Abschnitts in der Liste (Titel, Erinnerungen, Pause, KI) */
+private const val AI_ITEM = 3
 
 /** Wie rememberLauncherForActivityResult, aber ohne Absturz, wo es keine Activity gibt (Vorschau, Tests). */
 @Composable
@@ -103,8 +109,16 @@ fun OptionsScreen(state: AppState, act: Actions, nav: Nav, ui: UiController) {
             ) { ui.toast(if (act.importJson(text)) "Sicherung eingespielt." else "Das ist keine gültige Questlog-Sicherung.") })
         }
     }
+    val list = rememberLazyListState()
+    LaunchedEffect(nav.focus) {
+        if (nav.focus == "ai") {
+            list.scrollToItem(AI_ITEM)
+            nav.focus = null
+        }
+    }
     LazyColumn(
         Modifier.fillMaxSize(),
+        state = list,
         contentPadding = PaddingValues(start = 12.dp, end = 12.dp, bottom = 24.dp),
         verticalArrangement = Arrangement.spacedBy(10.dp),
     ) {
@@ -136,6 +150,7 @@ fun OptionsScreen(state: AppState, act: Actions, nav: Nav, ui: UiController) {
                 }
             }
         }
+        item(key = "ai") { AiSection(state, act, nav, ui) }
         item {
             ParchSection("Chaos-Kammer", icon = "skull") {
                 T("Alles hier ist Spaß obendrauf und einzeln schaltbar.", Q.type.small, color = Pal.inkSoft)
@@ -172,8 +187,8 @@ fun OptionsScreen(state: AppState, act: Actions, nav: Nav, ui: UiController) {
         item {
             ParchSection("Über Questlog", icon = "quill") {
                 T("Version ${BuildConfig.VERSION_NAME}", Q.type.bodyBold, color = Pal.ink)
-                T("Offline, ohne Konto, ohne Werbung, ohne Tracking.", Q.type.small, color = Pal.inkSoft)
-                T("Schriften: Jacquard, Jersey, Pixelify Sans, Silkscreen, Comic Neue (SIL Open Font License). Pixelgrafiken und Klänge: eigene.", Q.type.small, color = Pal.inkSoft)
+                T("Offline, ohne Konto, ohne Werbung, ohne Tracking. Der KI-Spielleiter ist optional und spricht nur mit dem Server, den du einträgst.", Q.type.small, color = Pal.inkSoft)
+                T("Schriften: Cinzel Decorative, Jersey, Pixelify Sans, Silkscreen, Comic Neue (SIL Open Font License). Pixelgrafiken und Klänge: eigene.", Q.type.small, color = Pal.inkSoft)
             }
         }
         item {
@@ -201,12 +216,12 @@ fun Onboarding(state: AppState, act: Actions) {
     ) {
         Spacer(Modifier.height(12.dp))
         PixelIcon("flame", 64.dp)
-        T("Questlog", Q.type.logo, color = Pal.gold0)
+        H("Questlog", Q.type.logo, color = Pal.gold0)
         when (step) {
             0 -> {
                 ScrollPanel(seed = 5) {
                     Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                        T("Willkommen in der Chronik", Q.type.heading, color = Pal.ink)
+                        H("Willkommen in der Chronik", Q.type.heading, color = Pal.ink)
                         Bullet("hourglass", "Jede Quest hat ein Zeitfenster: zu früh, im Fenster, überfällig.")
                         Bullet("coin", "Punkte nach Aufwand, Wichtigkeit und Überwindung. Das Gehasste zählt mehr.")
                         Bullet("flame", "Die Glut zeigt deine Form. Sie kühlt ab, wenn du nichts tust, erlischt aber nie.")
@@ -217,7 +232,7 @@ fun Onboarding(state: AppState, act: Actions) {
                 PixelButton("Weiter", { step = 1; fx.tap() }, Modifier.fillMaxWidth(), icon = "play")
             }
             1 -> {
-                T("Womit willst du anfangen?", Q.type.heading, color = Pal.gold0, align = TextAlign.Center)
+                H("Womit willst du anfangen?", Q.type.heading, color = Pal.gold0, align = TextAlign.Center)
                 Templates.packs.forEach { p ->
                     Column(Modifier.fillMaxWidth().parchmentCard(p.key.hashCode()).padding(horizontal = 14.dp, vertical = 6.dp)) {
                         Toggle(p.key in selected, { if (it) selected += p.key else selected -= p.key }, p.name, "${p.quests.size} Quests · ${p.text}", icon = p.icon)
@@ -229,7 +244,7 @@ fun Onboarding(state: AppState, act: Actions) {
             else -> {
                 ScrollPanel(seed = 8) {
                     Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                        T("Erinnerungen", Q.type.heading, color = Pal.ink)
+                        H("Erinnerungen", Q.type.heading, color = Pal.ink)
                         T("Questlog meldet sich, wenn ein Fenster aufgeht und kurz bevor es zugeht. Höchstens dreimal am Tag, nie zwischen 22 und 7 Uhr. Das lässt sich in den Optionen ändern.", Q.type.body, color = Pal.inkSoft)
                     }
                 }

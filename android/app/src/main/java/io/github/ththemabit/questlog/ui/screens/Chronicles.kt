@@ -21,6 +21,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import io.github.ththemabit.questlog.ai.GameMaster
 import io.github.ththemabit.questlog.core.Letter
 import io.github.ththemabit.questlog.data.AppState
 import io.github.ththemabit.questlog.ui.Actions
@@ -32,6 +33,7 @@ import io.github.ththemabit.questlog.ui.pixel.Frames
 import io.github.ththemabit.questlog.ui.pixel.PixelButton
 import io.github.ththemabit.questlog.ui.pixel.PixelIcon
 import io.github.ththemabit.questlog.ui.pixel.ScrollPanel
+import io.github.ththemabit.questlog.ui.pixel.H
 import io.github.ththemabit.questlog.ui.pixel.T
 import io.github.ththemabit.questlog.ui.pixel.Tag
 import io.github.ththemabit.questlog.ui.pixel.stonePanel
@@ -74,12 +76,14 @@ fun RecapScreen(state: AppState, act: Actions, nav: Nav) {
                 if (recap.newRecord) Tag("Neuer Wochenrekord", Frames.gold, Pal.ink, icon = "crown")
             }
         }
-        if (chaos.saga) {
-            val key = "saga-${recap.weekStart}"
-            val paragraphs = state.save.storyCache[key]?.split("\n\n") ?: Story.saga(recap, chaos.gerald)
+        // Saga: vom KI-Spielleiter (wenn eingeschaltet und schon geschrieben) oder als Vorlage aus der Chaos-Kammer
+        val ai = state.save.settings.ai
+        val aiSaga = if (ai.ready && ai.saga) state.save.storyCache[GameMaster.sagaKey(recap.weekStart)] else null
+        if (chaos.saga || aiSaga != null) {
+            val paragraphs = aiSaga?.split("\n\n") ?: Story.saga(recap, chaos.gerald)
             ScrollPanel(seed = kw + 1) {
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    T("Die Saga der ${kw}. Woche", Q.type.heading, color = Pal.ink)
+                    H("Die Saga der ${kw}. Woche", Q.type.heading, color = Pal.ink)
                     paragraphs.forEach { T(it, Q.type.body, color = Pal.ink) }
                 }
             }
@@ -87,7 +91,7 @@ fun RecapScreen(state: AppState, act: Actions, nav: Nav) {
         recap.bestMoment?.let { m ->
             Column(Modifier.fillMaxWidth().stonePanel(Frames.gold).padding(16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                 T("DER HELLSTE MOMENT", Q.type.label, color = Pal.ink)
-                T(m.questTitle, Q.type.heading, color = Pal.ink)
+                H(m.questTitle, Q.type.heading, color = Pal.ink)
                 T("+${Fmt.n(m.points)} · " + Fmt.day(m.at).format(Fmt.weekday), Q.type.bodyBold, color = Pal.wood0)
             }
         }
@@ -124,7 +128,7 @@ fun LetterScreen(id: String, state: AppState, act: Actions, nav: Nav) {
             ScrollPanel(seed = id.hashCode()) {
                 Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                     T(letter.sender.uppercase(), Q.type.label, color = Pal.inkSoft)
-                    T(letter.title, Q.type.heading, color = Pal.ink)
+                    H(letter.title, Q.type.heading, color = Pal.ink)
                     letter.body.forEach { T(it, Q.type.body, color = Pal.ink) }
                     T(letter.footer, Q.type.small, color = Pal.inkSoft)
                     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) { PixelIcon("seal", 48.dp) }
@@ -168,7 +172,7 @@ fun CreditsScreen(questId: String, state: AppState, nav: Nav) {
             lines.forEach { (role, name) ->
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     if (role.isNotEmpty()) T(role.uppercase(), Q.type.label, color = Pal.boneFaint, align = TextAlign.Center)
-                    T(name, if (role.isEmpty()) Q.type.title else Q.type.heading, color = if (role.isEmpty()) Pal.gold0 else Pal.bone, align = TextAlign.Center)
+                    H(name, if (role.isEmpty()) Q.type.title else Q.type.heading, color = if (role.isEmpty()) Pal.gold0 else Pal.bone, align = TextAlign.Center)
                 }
             }
             Spacer(Modifier.height(560.dp))

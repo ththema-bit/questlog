@@ -29,6 +29,7 @@ class MainActivity : ComponentActivity() {
         openQuest.value = intent?.getStringExtra(EXTRA_QUEST)
         val store = QuestlogApp.store(this)
         val act = StoreActions(store)
+        val ai = QuestlogApp.ai(this)
         setContent {
             val state by store.state.collectAsStateWithLifecycle()
             val nav = remember { Nav() }
@@ -39,13 +40,23 @@ class MainActivity : ComponentActivity() {
                     openQuest.value = null
                 }
             }
-            QuestlogRoot(state, act, nav)
+            QuestlogRoot(state, act, nav, ai = ai)
         }
     }
 
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
         intent.getStringExtra(EXTRA_QUEST)?.let { openQuest.value = it }
+    }
+
+    override fun onStart() {
+        super.onStart()
+        QuestlogApp.ai(this).setForeground(true)
+    }
+
+    override fun onStop() {
+        QuestlogApp.ai(this).setForeground(false)
+        super.onStop()
     }
 
     override fun onResume() {

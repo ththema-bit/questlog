@@ -55,6 +55,7 @@ import io.github.ththemabit.questlog.ui.pixel.PixelBar
 import io.github.ththemabit.questlog.ui.pixel.PixelButton
 import io.github.ththemabit.questlog.ui.pixel.PixelIcon
 import io.github.ththemabit.questlog.ui.pixel.ScrollPanel
+import io.github.ththemabit.questlog.ui.pixel.H
 import io.github.ththemabit.questlog.ui.pixel.T
 import io.github.ththemabit.questlog.ui.pixel.parchmentCard
 import io.github.ththemabit.questlog.ui.pixel.stonePanel
@@ -265,7 +266,7 @@ fun RouletteScreen(blindStart: Boolean, state: AppState, act: Actions, nav: Nav)
             Column(Modifier.fillMaxWidth().height(170.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
                 PixelIcon(if (hidden) "dice" else Categories.of(current.quest.category).icon, 48.dp)
                 Spacer(Modifier.height(8.dp))
-                T(if (hidden) "???" else current.quest.title, Q.type.title, color = Pal.ink, align = TextAlign.Center, maxLines = 2)
+                H(if (hidden) "???" else current.quest.title, Q.type.title, color = Pal.ink, align = TextAlign.Center, maxLines = 2)
                 if (stopped && !hidden) T(Fmt.window(current), Q.type.small, color = Pal.inkSoft)
             }
         }

@@ -31,10 +31,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
+import io.github.ththemabit.questlog.ai.GameMaster
 import io.github.ththemabit.questlog.core.GameState
 import io.github.ththemabit.questlog.core.Moment
 import io.github.ththemabit.questlog.core.Persona
 import io.github.ththemabit.questlog.core.QuestState
+import io.github.ththemabit.questlog.core.SaveData
 import io.github.ththemabit.questlog.core.Settings
 import io.github.ththemabit.questlog.core.StoryContext
 import io.github.ththemabit.questlog.core.TemplateStoryteller
@@ -58,6 +60,7 @@ import io.github.ththemabit.questlog.ui.pixel.IconTap
 import io.github.ththemabit.questlog.ui.pixel.PixelButton
 import io.github.ththemabit.questlog.ui.pixel.PixelIcon
 import io.github.ththemabit.questlog.ui.pixel.SectionTitle
+import io.github.ththemabit.questlog.ui.pixel.H
 import io.github.ththemabit.questlog.ui.pixel.T
 import io.github.ththemabit.questlog.ui.pixel.parchmentCard
 import io.github.ththemabit.questlog.ui.theme.Pal
@@ -67,7 +70,14 @@ import java.time.ZoneId
 
 val Story = TemplateStoryteller()
 
-fun persona(settings: Settings): Persona = if (settings.chaos.narrators) Persona.of(settings.narrator) else Persona.CHRONIST
+fun persona(settings: Settings): Persona = Persona.active(settings)
+
+/** Begrüßung: das Briefing des KI-Spielleiters, falls es eins für heute gibt, sonst die Vorlage. */
+fun greeting(save: SaveData, game: GameState): Pair<String, Boolean> {
+    val ai = save.settings.ai
+    if (ai.ready && ai.briefing) GameMaster.briefing(save, game.today)?.let { return it to true }
+    return greeting(game, save.settings) to false
+}
 
 fun greeting(game: GameState, settings: Settings): String {
     val hour = Instant.ofEpochMilli(game.now).atZone(ZoneId.systemDefault()).hour
@@ -109,14 +119,18 @@ fun BoardScreen(state: AppState, act: Actions, nav: Nav, ui: UiController) {
     ) {
         item(key = "top") {
             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                T("Questlog", Q.type.logo, Modifier.weight(1f).padding(start = 4.dp), color = Pal.gold0)
+                H("Questlog", Q.type.logo.copy(fontSize = Q.type.logo.fontSize * 0.8f), Modifier.weight(1f).padding(start = 4.dp), color = Pal.gold0, maxLines = 1)
+                if (save.settings.ai.enabled && save.settings.ai.forge) IconTap("orb", "Spielleiter", { fx.tap(); nav.go(Route.Master()) })
                 IconTap("dice", "Quest-Roulette", { fx.tap(); nav.go(Route.Roulette(blind = false)) })
                 IconTap("quill", "Schnelleingabe", { fx.tap(); nav.go(Route.QuickAdd) })
                 IconTap("plus", "Neue Quest", { fx.tap(); nav.go(Route.Edit(null)) })
             }
         }
         item(key = "status") { StatusHeader(game) }
-        item(key = "greet") { Greeting(greeting(game, save.settings), persona(save.settings)) }
+        item(key = "greet") {
+            val (text, fromAi) = greeting(save, game)
+            Greeting(text, persona(save.settings), fromAi)
+        }
         item(key = "season") {
             SeasonCard(game, chaos.gerald, if (game.recap != null) ({ nav.go(Route.Recap) }) else null)
         }
@@ -228,19 +242,23 @@ private fun LazyListScope.banners(state: AppState, act: Actions, nav: Nav, ui: U
 }
 
 @Composable
-fun Greeting(text: String, persona: Persona) {
-    val icon = when (persona) {
-        Persona.CHRONIST -> "quill"
-        Persona.OMA -> "heart"
-        Persona.SERGEANT -> "horn"
-        Persona.BUTLER -> "bell"
-        Persona.TIERFILMER -> "leaf"
+fun Greeting(text: String, persona: Persona, fromAi: Boolean = false) {
+    val icon = when {
+        fromAi -> "orb"
+        else -> when (persona) {
+            Persona.CHRONIST -> "quill"
+            Persona.OMA -> "heart"
+            Persona.SERGEANT -> "horn"
+            Persona.BUTLER -> "bell"
+            Persona.TIERFILMER -> "leaf"
+        }
     }
     Row(Modifier.fillMaxWidth().padding(horizontal = 6.dp), verticalAlignment = Alignment.CenterVertically) {
         PixelIcon(icon, 20.dp)
         Spacer(Modifier.width(10.dp))
         Column {
-            if (persona != Persona.CHRONIST) T(persona.title.uppercase(), Q.type.label, color = Pal.boneFaint)
+            val label = listOfNotNull(if (fromAi) "Spielleiter" else null, if (persona != Persona.CHRONIST) persona.title else null).joinToString(" · ")
+            if (label.isNotEmpty()) T(label.uppercase(), Q.type.label, color = Pal.boneFaint)
             T(text, Q.type.body, color = Pal.parch1)
         }
     }

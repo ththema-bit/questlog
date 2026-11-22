@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Der optionale KI-Spielleiter läuft meist auf einem eigenen Rechner im Heimnetz
+  (Ollama, LM Studio, llama.cpp), der nur unverschlüsseltes HTTP spricht. Darum ist
+  Klartext erlaubt. Questlog verbindet sich nur mit der Adresse, die man selbst unter
+  Optionen einträgt, sonst mit nichts.
+-->
+<network-security-config>
+    <base-config cleartextTrafficPermitted="true">
+        <trust-anchors>
+            <certificates src="system" />
+        </trust-anchors>
+    </base-config>
+</network-security-config>

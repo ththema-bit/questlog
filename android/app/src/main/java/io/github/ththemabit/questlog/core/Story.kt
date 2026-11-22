@@ -24,6 +24,9 @@ enum class Persona(val key: String, val title: String, val blurb: String) {
 
     companion object {
         fun of(key: String): Persona = entries.firstOrNull { it.key == key } ?: CHRONIST
+
+        /** Die Stimme, die gerade spricht: nur mit Chaos „Erzähler-Stimmen“ eine andere als der Chronist. */
+        fun active(s: Settings): Persona = if (s.chaos.narrators) of(s.narrator) else CHRONIST
     }
 }
 

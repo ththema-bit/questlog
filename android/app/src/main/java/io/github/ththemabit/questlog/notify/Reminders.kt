@@ -18,6 +18,7 @@ import androidx.work.WorkManager
 import androidx.work.WorkerParameters
 import io.github.ththemabit.questlog.MainActivity
 import io.github.ththemabit.questlog.QuestlogApp
+import io.github.ththemabit.questlog.ai.GameMaster
 import io.github.ththemabit.questlog.R
 import io.github.ththemabit.questlog.core.GameState
 import io.github.ththemabit.questlog.core.Moment
@@ -63,22 +64,26 @@ object Reminders {
     /** Welche Benachrichtigungen jetzt fällig wären (ohne Ruhezeit/Limit). Reine Logik, testbar. */
     fun pending(save: SaveData, game: GameState, hour: Int): List<Note> {
         val s = save.settings
-        val persona = if (s.chaos.narrators) Persona.of(s.narrator) else Persona.CHRONIST
+        val persona = Persona.active(s)
         val today = game.today
         val out = ArrayList<Note>()
         fun line(m: Moment, ctx: StoryContext, salt: Long) = story.line(persona, m, ctx, salt)
+        // Texte des KI-Spielleiters, falls vorhanden. Sonst Vorlagen.
+        val ai = s.ai
+        val brief = if (ai.ready && ai.briefing) GameMaster.morningBriefing(save, today) else null
+        fun lore(q: io.github.ththemabit.questlog.core.Quest) = if (ai.ready && ai.questTexts) GameMaster.textsFor(save, q) else null
         val due = game.board.overdue + game.board.open
         if (s.digestHour >= 0 && hour == s.digestHour && due.isNotEmpty()) {
             val top = due.first()
             out += Note("digest-$today", null, "Questlog: ${due.size} ${if (due.size == 1) "Quest wartet" else "Quests warten"}",
-                line(Moment.DIGEST, StoryContext(quest = top.quest.title, count = due.size), today.toEpochDay()), false)
+                brief ?: line(Moment.DIGEST, StoryContext(quest = top.quest.title, count = due.size), today.toEpochDay()), false)
         }
         for (qs in game.quests) {
             val q = qs.quest
             if (!q.recurring || q.archived) continue
             val cycle = qs.lastDone ?: q.createdAt
             if (s.notifyOpen && qs.status == WindowStatus.OPEN && q.minDays != null && q.minDays > 0 && qs.daysSince == q.minDays) {
-                out += Note("open-${q.id}-$cycle", q.id, q.title, line(Moment.WINDOW_OPEN, StoryContext(quest = q.title), cycle), q.mini != null)
+                out += Note("open-${q.id}-$cycle", q.id, q.title, lore(q)?.reminder ?: line(Moment.WINDOW_OPEN, StoryContext(quest = q.title), cycle), q.mini != null)
             }
             if (s.notifyClosing && qs.status == WindowStatus.OPEN && qs.closesIn == 1) {
                 out += Note("closing-${q.id}-$cycle", q.id, q.title, line(Moment.CLOSING_SOON, StoryContext(quest = q.title), cycle + 1), q.mini != null)

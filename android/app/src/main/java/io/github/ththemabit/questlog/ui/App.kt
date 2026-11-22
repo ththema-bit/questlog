@@ -26,11 +26,14 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.unit.dp
+import io.github.ththemabit.questlog.ai.AiPort
+import io.github.ththemabit.questlog.ai.NoAi
 import io.github.ththemabit.questlog.core.Meta
 import io.github.ththemabit.questlog.core.Quest
 import io.github.ththemabit.questlog.core.QuestDraft
@@ -41,6 +44,7 @@ import io.github.ththemabit.questlog.data.Store
 import io.github.ththemabit.questlog.ui.components.BottomNav
 import io.github.ththemabit.questlog.ui.pixel.LocalPx
 import io.github.ththemabit.questlog.ui.pixel.PixelIcon
+import io.github.ththemabit.questlog.ui.pixel.H
 import io.github.ththemabit.questlog.ui.pixel.T
 import io.github.ththemabit.questlog.ui.pixel.dungeonWall
 import io.github.ththemabit.questlog.ui.pixel.pixelUnit
@@ -52,6 +56,7 @@ import io.github.ththemabit.questlog.ui.screens.DetailScreen
 import io.github.ththemabit.questlog.ui.screens.EditScreen
 import io.github.ththemabit.questlog.ui.screens.GloryScreen
 import io.github.ththemabit.questlog.ui.screens.LetterScreen
+import io.github.ththemabit.questlog.ui.screens.MasterScreen
 import io.github.ththemabit.questlog.ui.screens.Onboarding
 import io.github.ththemabit.questlog.ui.screens.OptionsScreen
 import io.github.ththemabit.questlog.ui.screens.OverlayHost
@@ -93,21 +98,30 @@ class StoreActions(private val store: Store) : Actions {
     override fun now() = store.now()
 }
 
+/** Der KI-Spielleiter für die Oberfläche. Ohne KI: [NoAi]. */
+val LocalAi = staticCompositionLocalOf<AiPort> { NoAi }
+
 @Composable
-fun QuestlogRoot(state: AppState?, act: Actions, nav: Nav = remember { Nav() }, ui: UiController = remember { UiController() }) {
+fun QuestlogRoot(state: AppState?, act: Actions, nav: Nav = remember { Nav() }, ui: UiController = remember { UiController() }, ai: AiPort = NoAi) {
+    QuestlogFrame(state?.save?.settings ?: Settings(), cursed = state?.game?.curse != null, ai = ai) {
+        when {
+            state == null -> Splash()
+            !state.save.meta.onboarded -> Box(Modifier.windowInsetsPadding(WindowInsets.safeDrawing)) { Onboarding(state, act) }
+            else -> Main(state, act, nav, ui)
+        }
+    }
+}
+
+/** Pixel-Maß, Klänge, KI, Schriften und Kerkermauer für alles darin (auch für Vorschauen einzelner Teile). */
+@Composable
+fun QuestlogFrame(settings: Settings, cursed: Boolean = false, ai: AiPort = NoAi, content: @Composable () -> Unit) {
     val u = pixelUnit(LocalDensity.current.density)
     val view = LocalView.current
-    val settings by rememberUpdatedState(state?.save?.settings ?: Settings())
-    val fx = remember(view) { Fx(view, { settings.sound }, { settings.haptics }) }
-    CompositionLocalProvider(LocalPx provides u, LocalFx provides fx) {
-        QuestlogTheme(cursed = state?.game?.curse != null) {
-            Box(Modifier.fillMaxSize().dungeonWall(u)) {
-                when {
-                    state == null -> Splash()
-                    !state.save.meta.onboarded -> Box(Modifier.windowInsetsPadding(WindowInsets.safeDrawing)) { Onboarding(state, act) }
-                    else -> Main(state, act, nav, ui)
-                }
-            }
+    val current by rememberUpdatedState(settings)
+    val fx = remember(view) { Fx(view, { current.sound }, { current.haptics }) }
+    CompositionLocalProvider(LocalPx provides u, LocalFx provides fx, LocalAi provides ai) {
+        QuestlogTheme(cursed = cursed) {
+            Box(Modifier.fillMaxSize().dungeonWall(u)) { content() }
         }
     }
 }
@@ -116,7 +130,7 @@ fun QuestlogRoot(state: AppState?, act: Actions, nav: Nav = remember { Nav() }, 
 private fun Splash() {
     Column(Modifier.fillMaxSize(), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = androidx.compose.foundation.layout.Arrangement.Center) {
         PixelIcon("flame", 64.dp)
-        T("Questlog", Q.type.logo, color = Pal.gold0)
+        H("Questlog", Q.type.logo, color = Pal.gold0)
     }
 }
 
@@ -155,6 +169,7 @@ fun ScreenHost(route: Route, state: AppState, act: Actions, nav: Nav, ui: UiCont
         is Route.Letter -> LetterScreen(route.id, state, act, nav)
         is Route.Credits -> CreditsScreen(route.questId, state, nav)
         Route.Templates -> TemplatesScreen(state, act, nav, ui)
+        is Route.Master -> MasterScreen(route, state, nav, ui)
     }
 }
 

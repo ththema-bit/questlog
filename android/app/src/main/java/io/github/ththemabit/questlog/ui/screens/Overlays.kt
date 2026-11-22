@@ -63,6 +63,7 @@ import io.github.ththemabit.questlog.ui.pixel.PixelBar
 import io.github.ththemabit.questlog.ui.pixel.PixelButton
 import io.github.ththemabit.questlog.ui.pixel.PixelIcon
 import io.github.ththemabit.questlog.ui.pixel.ScrollPanel
+import io.github.ththemabit.questlog.ui.pixel.H
 import io.github.ththemabit.questlog.ui.pixel.T
 import io.github.ththemabit.questlog.ui.pixel.stonePanel
 import io.github.ththemabit.questlog.ui.theme.Pal
@@ -133,7 +134,7 @@ private fun ResultOverlay(o: Overlay.Result, state: AppState, act: Actions, ui: 
                         PixelIcon(if (r.bossDefeated) "skull" else if (r.mini) "feather" else if (r.hit) "sword" else "seal", 32.dp)
                         Spacer(Modifier.width(10.dp))
                         Column(Modifier.weight(1f)) {
-                            T(headline, Q.type.heading, color = Pal.ink)
+                            H(headline, Q.type.heading, color = Pal.ink)
                             T(r.questTitle, Q.type.small, color = Pal.inkSoft, maxLines = 2)
                         }
                         T("+${Fmt.n(r.points)}", Q.type.numberBig, color = Pal.gold3)
@@ -150,7 +151,7 @@ private fun ResultOverlay(o: Overlay.Result, state: AppState, act: Actions, ui: 
                     }
                     r.wagerWon?.let { T("Wette gewonnen: +${Fmt.n(it)} Glut zurück", Q.type.bodyBold, color = Pal.leaf2) }
                     if (r.newPb) T("Neue Bestzeit!", Q.type.bodyBold, color = Pal.mana2)
-                    T(Story.line(persona(state.save.settings), Moment.DONE, StoryContext(), salt = Rng.hash(r.eventId)), Q.type.small, color = Pal.inkSoft)
+                    T(victoryLine(state, r), Q.type.small, color = Pal.inkSoft)
                 }
             }
             r.loot?.let { loot ->
@@ -177,6 +178,20 @@ private fun ResultOverlay(o: Overlay.Result, state: AppState, act: Actions, ui: 
         }
         Confetti(r.eventId, count = 40 + (if (r.bossDefeated) 60 else 0) + (if (levelUp) 40 else 0) + (shout ?: 0))
     }
+}
+
+/** Siegeszeile: vom KI-Spielleiter passend zur Quest, sonst aus den Vorlagen. */
+private fun victoryLine(state: AppState, r: io.github.ththemabit.questlog.core.DoneResult): String {
+    val save = state.save
+    val ai = save.settings.ai
+    val q = save.quests.firstOrNull { it.id == r.questId }
+    val lore = if (ai.ready && ai.questTexts && q != null) io.github.ththemabit.questlog.ai.GameMaster.textsFor(save, q) else null
+    val pick = { list: List<String> -> list.getOrNull((Rng.hash(r.eventId) and 0x7fffffff).toInt() % list.size.coerceAtLeast(1)) }
+    return when {
+        lore == null -> null
+        r.mini -> lore.mini ?: pick(lore.victory)
+        else -> pick(lore.victory)
+    } ?: Story.line(persona(save.settings), Moment.DONE, StoryContext(), salt = Rng.hash(r.eventId))
 }
 
 @Composable
@@ -224,7 +239,7 @@ private fun ConfirmOverlay(o: Overlay.Confirm, ui: UiController) {
     Column(Modifier.fillMaxWidth().padding(20.dp).clickable(none, indication = null) {}) {
         ScrollPanel(seed = o.title.hashCode()) {
             Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                T(o.title, Q.type.heading, color = Pal.ink)
+                H(o.title, Q.type.heading, color = Pal.ink)
                 T(o.text, Q.type.body, color = Pal.inkSoft)
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     PixelButton("Abbrechen", { ui.dismiss() }, Modifier.weight(1f), kind = Btn.STONE)
@@ -241,7 +256,7 @@ private fun DatePickOverlay(o: Overlay.DatePick, ui: UiController) {
     Column(Modifier.fillMaxWidth().padding(16.dp).clickable(none, indication = null) {}) {
         ScrollPanel(seed = 31) {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                T(o.title, Q.type.heading, color = Pal.ink)
+                H(o.title, Q.type.heading, color = Pal.ink)
                 CalendarGrid(o.initial, null, o.min, o.max) { d -> ui.dismiss(); o.onPick(d) }
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     PixelButton("Abbrechen", { ui.dismiss() }, Modifier.weight(1f), kind = Btn.STONE)
@@ -308,7 +323,7 @@ private fun ShoutOverlay(o: Overlay.Shout, state: AppState, act: Actions, ui: Ui
         ScrollPanel(seed = 77) {
             Column(verticalArrangement = Arrangement.spacedBy(10.dp), horizontalAlignment = Alignment.CenterHorizontally) {
                 PixelIcon("horn", 48.dp)
-                T(if (quiet) "Flüstermodus" else "Kampfschrei!", Q.type.heading, color = Pal.ink)
+                H(if (quiet) "Flüstermodus" else "Kampfschrei!", Q.type.heading, color = Pal.ink)
                 T(if (quiet) "Es ist Ruhezeit. Ein entschlossenes Flüstern für „$title“ genügt." else "Schrei für „$title“! Lauter heißt mehr Konfetti.", Q.type.body, color = Pal.inkSoft, align = TextAlign.Center)
                 when {
                     granted -> {

@@ -16,4 +16,13 @@ object SaveCodec {
     fun encode(save: SaveData): String = json.encodeToString(SaveData.serializer(), save)
     fun encodePretty(save: SaveData): String = pretty.encodeToString(SaveData.serializer(), save)
     fun decode(text: String): SaveData = json.decodeFromString(SaveData.serializer(), text)
+
+    /** Für Sicherungen: ein API-Schlüssel gehört nicht in eine Datei, die herumgereicht wird. */
+    fun forExport(save: SaveData): SaveData = save.copy(settings = save.settings.copy(ai = save.settings.ai.copy(apiKey = "")))
+
+    /** Beim Einspielen: Hat die Sicherung keinen Schlüssel, bleibt der eigene. */
+    fun keepKey(imported: SaveData, current: SaveData): SaveData {
+        val key = imported.settings.ai.apiKey.ifBlank { current.settings.ai.apiKey }
+        return imported.copy(settings = imported.settings.copy(ai = imported.settings.ai.copy(apiKey = key)))
+    }
 }

@@ -53,8 +53,9 @@ data class AppState(val save: SaveData, val game: GameState)
  * Änderung und jede halbe Minute den Spielzustand neu aus.
  */
 @OptIn(FlowPreview::class, ExperimentalCoroutinesApi::class)
-class Store(context: Context, private val zone: ZoneId = ZoneId.systemDefault()) {
-    private val dir = context.applicationContext.filesDir
+class Store(private val dir: File, private val zone: ZoneId = ZoneId.systemDefault()) {
+    constructor(context: Context, zone: ZoneId = ZoneId.systemDefault()) : this(context.applicationContext.filesDir, zone)
+
     private val file = File(dir, "questlog.json")
     private val backup = File(dir, "questlog.bak.json")
     private val engine = Engine(zone)
@@ -81,6 +82,9 @@ class Store(context: Context, private val zone: ZoneId = ZoneId.systemDefault())
     }
 
     suspend fun awaitState(): AppState = state.filterNotNull().first()
+
+    /** Der Spielstand genau jetzt (state rechnet minimal hinterher). */
+    fun snapshot(): SaveData? = save.value
 
     fun refresh() {
         clock.value = System.currentTimeMillis()
@@ -230,14 +234,26 @@ class Store(context: Context, private val zone: ZoneId = ZoneId.systemDefault())
 
     fun cacheStory(key: String, text: String) = change { s -> s.copy(storyCache = s.storyCache + (key to text)) }
 
+    fun dropStory(which: (String) -> Boolean) = change { s -> s.copy(storyCache = s.storyCache.filterKeys { !which(it) }) }
+
+    /** Vorschläge des Spielleiters in einem Rutsch übernehmen. */
+    fun applyPlan(add: List<Quest>, update: List<Quest>, archive: Set<String>, cache: Map<String, String>) = change { s ->
+        val byId = update.associateBy { it.id }
+        s.copy(
+            quests = s.quests.map { q -> (byId[q.id] ?: q).let { if (it.id in archive) it.copy(archived = true) else it } } + add,
+            storyCache = s.storyCache + cache,
+        )
+    }
+
     // ---------------------------------------------------------------- Backup
 
-    fun exportJson(): String = SaveCodec.encodePretty(save.value ?: SaveData())
+    /** Sicherung als Text. Ein API-Schlüssel bleibt draußen, der gehört nicht in eine Datei, die herumgereicht wird. */
+    fun exportJson(): String = SaveCodec.encodePretty(SaveCodec.forExport(save.value ?: SaveData()))
 
-    /** Spielstand aus einem Backup übernehmen. Wirft bei kaputter Datei eine Ausnahme. */
+    /** Spielstand aus einem Backup übernehmen. Wirft bei kaputter Datei eine Ausnahme. Der eigene API-Schlüssel bleibt. */
     fun importJson(text: String) {
         val data = SaveCodec.decode(text)
-        change { data }
+        change { old -> SaveCodec.keepKey(data, old) }
     }
 
     fun resetAll() = change { SaveData(meta = Meta(seed = Random.nextLong())) }

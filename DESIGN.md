@@ -48,8 +48,8 @@
 
 - **Material:** Kerkermauer als Hintergrund, Steinplatten mit Fase und Goldnieten, Pergament mit gerissenen Kanten und Flecken, Schriftrollen mit Holzstäben, rotes Wachssiegel als Abhak-Knopf.
 - **Pixel:** Alles wird in ganzzahligen „Kunst-Pixeln“ gezeichnet (`ui/pixel/PixelKit.kt`), damit es auf jedem Display scharf bleibt. Keine Verläufe.
-- **Icons:** 50 eigene 16×16-Pixelgrafiken als Text in `ui/pixel/IconArt.kt`. App-Icon, Benachrichtigungs-Icon und Widget-Bilder erzeugt `android/tools/gen_assets.py` daraus.
-- **Schriften (OFL):** Jacquard 24 (Pixel-Fraktur, Überschriften), Pixelify Sans (Text), Jersey 10 (Zahlen), Silkscreen (Etiketten), Comic Neue (nur für den Fluch).
+- **Icons:** 51 eigene 16×16-Pixelgrafiken als Text in `ui/pixel/IconArt.kt`. App-Icon, Benachrichtigungs-Icon und Widget-Bilder erzeugt `android/tools/gen_assets.py` daraus.
+- **Schriften (OFL):** Cinzel Decorative (Überschriften), Pixelify Sans (Text), Jersey 10 (Zahlen), Silkscreen (Etiketten), Comic Neue (nur für den Fluch). Überschriften werden ohne Kantenglättung in Kunst-Pixeln gerastert und scharf vergrößert, mit einem Pixel Schlagschatten (`ui/pixel/PixelTitle.kt`). So wird aus einer Fantasy-Antiqua eine Pixel-Überschrift wie in alten Rollenspielen. Die Schrift steht nur in `HeadingRaster.fontRes` und lässt sich dort gegen eine Schrift aus dem kommenden Stylesheet tauschen.
 - **Klang:** 8-Bit-Klänge werden live synthetisiert (`ui/Fx.kt`), keine Audiodateien.
 - **UX:** Wischen oder Siegel antippen zum Abhaken, Beipackzettel mit Rückgängig, Haptik, kompakter Kopf, damit Quests sofort im Bild sind, große Tippflächen (48 dp).
 
@@ -71,37 +71,53 @@
 
 ## Stand der Features
 
-Umgesetzt: alle Ideen aus Fundament (F01–F10), Game-Kern (K01–K10), Würze außer W08 und W10, Modifier außer M09, Chaos (C01–C10).
+Umgesetzt: alle Ideen aus Fundament (F01–F10), Game-Kern (K01–K10), Würze außer W08 und W10, Modifier außer M09, Chaos (C01–C10) und der optionale KI-Spielleiter (siehe unten).
 
 Noch offen:
 - **W08 Questreihen** und **M09 Dresscode**: im Brainstorming auf „später“ gesetzt.
 - **W10 Koop (WG/Partner):** braucht Sync zwischen Handys. Das Ereignis-Protokoll ist dafür gemacht: Ereignisse mehrerer Handys lassen sich zusammenführen und nachrechnen. Fehlt noch: ein Sync-Weg (z. B. eigener kleiner Server auf der AI-Box oder Datei-Austausch) und Spieler-IDs an Ereignissen.
 - **Englische Übersetzung** für den Play Store: Texte liegen gebündelt in Kotlin (`core/Story.kt`, Screens) und müssen dafür in Ressourcen.
 
-## KI als Bonus (geplant, nicht eingebaut)
+## KI-Spielleiter (optional, eingebaut)
 
-Die Naht ist schon da: `core/Story.kt` definiert `Storyteller` (Begrüßung, Erinnerungen, Saga, Briefe, Abspann) und `QuestSmith` (Freitext → Quests). Heute stecken dahinter `TemplateStoryteller` und `HeuristicQuestSmith`. Eine KI-Variante implementiert dieselben Schnittstellen.
+Die App läuft komplett ohne KI. Wer will, verbindet sie unter **Optionen → KI-Spielleiter** mit einem eigenen Server. Gesprochen wird die OpenAI-kompatible Schnittstelle (`/v1/models`, `/v1/chat/completions`, mit Streaming), die Ollama, LM Studio, llama.cpp, vLLM und viele Cloud-Anbieter können. Adresse, Modell und bei Cloud-Diensten ein API-Schlüssel werden selbst eingetragen. „Verbindung testen“ listet die Modelle des Servers zum Antippen.
 
-Weil Antworten dauern, erzeugt die KI Texte vorab (z. B. die Saga am Sonntagabend) und legt sie in `SaveData.storyCache` ab. Die Oberfläche fragt immer zuerst den Cache und fällt sonst auf die Vorlage zurück. So bleibt die App schnell und funktioniert auch, wenn die KI gerade nicht erreichbar ist.
+| Funktion (einzeln schaltbar) | Wo | Ohne KI |
+|---|---|---|
+| **Quests bauen** (Agent) | Kristallkugel oben auf dem Board, „Spielleiter fragen“ in der Schnelleingabe, Kugel in jeder Quest („Mit dem Spielleiter besprechen“) | Schnelleingabe mit Faustregeln |
+| **Questtexte** | Einleitung in der Quest, Siegeszeile beim Abhaken, Ermutigung für die Mini-Version, Erinnerung beim Öffnen des Fensters, Boss-Auftritt | Vorlagen |
+| **Tagesbriefing** | Begrüßung auf dem Board, Morgen-Übersicht als Benachrichtigung | Erzähler-Zeilen |
+| **Heldensaga** | Wochenrückblick, aus den echten Zahlen der Woche | Vorlagen-Saga (Chaos-Kammer) |
 
-Drei Wege, alle optional:
+Im Gespräch beschreibt man, was ansteht („Ich ziehe Ende Dezember um“). Der Spielleiter antwortet in seiner Stimme und schlägt neue Quests, Änderungen an bestehenden und Archivierungen vor. Jeder Vorschlag hat ein Häkchen, übernommen wird nur, was man bestätigt.
 
-1. **Eigene API:** eine OpenAI-kompatible Schnittstelle deckt lokale Server (Ollama, LM Studio, llama.cpp auf der AI-Box) und die meisten Cloud-Anbieter ab, die Anthropic-API kommt als eigener Adapter dazu. Nutzer tragen Adresse und Schlüssel selbst ein.
-2. **Modell auf dem Handy:** ein kleines, quantisiertes Modell (etwa 0,5 bis 2 Milliarden Parameter) über MediaPipe LLM Inference oder llama.cpp. Gut für kurze Texte, langsamer bei der Saga.
-3. **Eigenes Modell auf der AI-Box trainieren:** ein kleines Basismodell per LoRA auf Questlog-Aufgaben feintunen (Freitext → Quest-JSON, Wochenwerte → Saga, Persona-Zeilen), Trainingsdaten synthetisch aus den Vorlagen und der Engine erzeugen, dann als GGUF bzw. `.task`-Datei fürs Handy exportieren. Welches Basismodell, zum Zeitpunkt des Trainings neu entscheiden.
+Regeln:
 
-Was die KI freischalten soll: bessere Saga, Erzähler, Boss-Intros und Abspann, klügere Schnelleingabe (Rhythmus, Teilaufgaben, Kategorie aus Kontext), Vorschläge für passende Mini-Versionen. Die Spielregeln selbst rechnet weiter die Engine, nie die KI.
+- **Die KI rechnet nie Punkte aus.** Sie liefert nur Titel, Kategorie, Werte, Zeitfenster, Teilaufgaben und Texte. Alles wird geprüft und auf gültige Werte begrenzt (Wichtigkeit 1–5, Aufwand bis 8 h, Fenster sortiert, Termine nicht in der Vergangenheit).
+- **Die Oberfläche wartet nie auf die KI.** Texte entstehen im Hintergrund, solange die App offen ist (`ai/AiService.kt`), und liegen in `SaveData.storyCache`. Fehlt ein Text oder passt er nach einer Änderung (neuer Titel, andere Kategorie) nicht mehr zur Quest, gilt die Vorlage, bis der neue fertig ist. Reihenfolge: Briefing, gerade geöffnete Quest, Saga, dann überfällige, offene und übrige Quests.
+- Das Briefing wird neu geschrieben, wenn ein neuer Tagesabschnitt beginnt (Nacht, Morgen, Tag, Abend), die Erzähler-Stimme wechselt oder eine Quest erledigt wurde. Bis dahin bleibt das letzte von heute stehen.
+- **Server weg** (unterwegs, Box aus): Der Dienst versucht es mit wachsendem Abstand neu (20 s bis 15 min), die App läuft mit Vorlagen weiter. Im Gespräch kommt eine verständliche Fehlermeldung.
+- **Unsaubere Antworten** kleiner Modelle werden abgefangen: Denk-Blöcke (`<think>`), Code-Zäune, Kommas am Ende, fehlende Markierung, abgebrochene Listen. `ai/GameMaster.kt` liest jedes Objekt einzeln und rettet, was heil ist. Bestehende Quests haben im Gespräch feste Kennungen (`q1`, `q2` … nach Position im Spielstand), damit kleine Modelle sie zuverlässig treffen.
+- **Datenschutz:** Ohne KI verlässt nichts das Handy. Mit KI gehen Quest-Titel und -Einstellungen, Spielwerte (Stufe, Glut, Serie, Wochenpunkte) und das Gespräch an den eingetragenen Server, sonst nichts. Der API-Schlüssel kommt nicht in Sicherungen. Klartext-HTTP ist erlaubt (`res/xml/network_security_config.xml`), weil Server im Heimnetz meist kein HTTPS haben.
 
-Datenschutz: Die Basis-App bleibt ohne Internet-Berechtigung. KI per API am besten als eigene Build-Variante oder ausdrücklicher Opt-in mit Hinweis, dass Quest-Titel an den gewählten Anbieter gehen. Dafür braucht der Play Store dann eine Datenschutzerklärung mit diesem Punkt.
+Code: `ai/AiClient.kt` (HTTP, Streaming, Fehlermeldungen), `ai/GameMaster.kt` (Prompts und Auslesen), `ai/AiService.kt` (Hintergrund und Gespräch), `ui/screens/Master.kt` (Gespräch), `ui/screens/AiOptions.kt` (Einstellungen). Tests gegen einen Fake-Server: `AiClientTest`, `GameMasterTest`, `AiServiceTest`. Gegen den echten Server: `LiveAiTest` (siehe `android/README.md`).
+
+**AI-Box einrichten (Ollama):** Ollama so starten, dass es im Heimnetz lauscht (`OLLAMA_HOST=0.0.0.0`), ein Modell laden (`ollama pull …`), in der App die Adresse der Box mit Port 11434 eintragen und „Verbindung testen“. Gut geeignet sind Modelle mit etwa 3 bis 14 Milliarden Parametern, die ordentlich Deutsch schreiben. Denkende Modelle funktionieren auch, brauchen aber länger.
+
+Später, weiterhin optional:
+
+1. **Modell auf dem Handy:** ein kleines, quantisiertes Modell über MediaPipe LLM Inference oder llama.cpp. Es implementiert dieselbe Schnittstelle (`AiPort`) oder läuft als lokaler Server.
+2. **Eigenes Modell auf der AI-Box trainieren:** ein kleines Basismodell per LoRA auf Questlog feintunen (Freitext → Quest-JSON, Wochenwerte → Saga, Stimmen). Trainingsdaten lassen sich aus den Prompts in `GameMaster.kt`, den Vorlagen und geprüften Antworten erzeugen, Export als GGUF.
+3. **Eigener Anthropic-Adapter**, falls die OpenAI-kompatible Schnittstelle eines Anbieters nicht reicht.
 
 ## Play Store (Checkliste)
 
 1. **App-ID** `io.github.ththemabit.questlog` (nach dem ersten Upload nicht mehr änderbar).
 2. **Signatur:** Upload-Schlüssel erzeugen, `keystore.properties` anlegen (siehe `android/README.md`), nie committen.
 3. **Bundle bauen:** `gradlew bundleRelease` (Play nimmt AAB).
-4. **Datenschutzerklärung:** nötig, weil die App das Mikrofon anfragen kann (Kampfschrei). Inhalt: keine Daten verlassen das Gerät, Mikrofon nur für die Lautstärke-Messung, nichts wird aufgenommen oder gespeichert.
-5. **Datensicherheit (Formular):** keine Daten erhoben oder geteilt.
+4. **Datenschutzerklärung:** nötig, weil die App das Mikrofon anfragen kann (Kampfschrei) und Internet nutzt (KI-Spielleiter). Inhalt: Ohne KI verlassen keine Daten das Gerät. Mikrofon nur für die Lautstärke-Messung, nichts wird aufgenommen oder gespeichert. Mit eingeschaltetem KI-Spielleiter gehen Quest-Titel, Quest-Einstellungen, Spielwerte und das Gespräch an den Server, den die Person selbst einträgt (eigener Rechner oder gewählter Cloud-Anbieter); Questlog selbst betreibt keinen Server.
+5. **Datensicherheit (Formular):** ohne KI keine Daten erhoben oder geteilt. Den optionalen Versand an den selbst eingetragenen KI-Server im Formular angeben.
 6. **Preis:** kostenpflichtig oder kostenlos mit Kauf einer Vollversion; Werbung würde den Belohnungsmoment stören und passt nicht zum Konzept.
 7. **Store-Grafiken:** Screenshots liefern die Paparazzi-Tests (`android/app/src/test/snapshots/images`), Icon-Grafik aus `tools/gen_assets.py`.
 8. **Übersetzung:** mindestens Englisch für mehr Reichweite.
-9. **Vor dem Release** einmal auf echten Geräten prüfen: Benachrichtigungen (Android 13+ fragt), Widget, Tanzpause (Sensor), Kampfschrei (Mikrofon), Backup-Export/Import.
+9. **Vor dem Release** einmal auf echten Geräten prüfen: Benachrichtigungen (Android 13+ fragt), Widget, Tanzpause (Sensor), Kampfschrei (Mikrofon), Backup-Export/Import, KI-Spielleiter mit einem Server im Heimnetz und ohne Netz.

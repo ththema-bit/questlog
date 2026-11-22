@@ -242,6 +242,13 @@ fun QuickAddScreen(state: AppState, act: Actions, nav: Nav, ui: UiController) {
                 }
             }
         }
+        val ai = state.save.settings.ai
+        if (ai.ready && ai.forge) item {
+            PixelButton("Spielleiter fragen", {
+                fx.tap()
+                nav.replace(Route.Master(prefill = text.trim(), send = text.isNotBlank()))
+            }, Modifier.fillMaxWidth(), kind = Btn.VIOLET, icon = "orb")
+        }
         item {
             PixelButton(
                 if (drafts.isEmpty()) "Nichts zu übernehmen" else "${drafts.size} ${if (drafts.size == 1) "Quest" else "Quests"} anlegen",

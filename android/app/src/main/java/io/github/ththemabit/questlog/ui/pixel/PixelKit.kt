@@ -503,7 +503,7 @@ fun SectionTitle(text: String, modifier: Modifier = Modifier, icon: String? = nu
             PixelIcon(icon, 20.dp)
             Box(Modifier.width(8.dp))
         }
-        T(text, Q.type.heading, color = color)
+        H(text, Q.type.heading, color = color)
         if (count != null) {
             Box(Modifier.width(8.dp))
             T(count.toString(), Q.type.number.copy(fontSize = Q.type.number.fontSize * 0.8f), color = Pal.boneDim)

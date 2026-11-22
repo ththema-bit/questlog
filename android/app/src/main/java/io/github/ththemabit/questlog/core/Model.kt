@@ -142,7 +142,33 @@ data class Settings(
     val chaos: Chaos = Chaos(),
     /** Erzähler-Stimme für Texte und Pushs (nur mit Chaos „Erzähler“) */
     val narrator: String = "chronist",
+    /** Optionaler KI-Spielleiter (eigener Server, z. B. Ollama auf der AI-Box) */
+    val ai: AiConfig = AiConfig(),
 )
+
+/**
+ * Verbindung zum KI-Spielleiter. Alles optional: Ohne KI nutzt die App Vorlagen und Faustregeln.
+ * Spricht jede OpenAI-kompatible Schnittstelle (Ollama, LM Studio, llama.cpp, vLLM, Cloud-Anbieter).
+ */
+@Serializable
+data class AiConfig(
+    val enabled: Boolean = false,
+    /** z. B. http://192.168.178.65:11434/v1 */
+    val baseUrl: String = "",
+    val model: String = "",
+    /** nur für Cloud-Anbieter nötig; wird nicht mit exportiert */
+    val apiKey: String = "",
+    /** Agent baut, ändert und archiviert Quests im Gespräch */
+    val forge: Boolean = true,
+    /** Texte je Quest: Questgeber-Text, Siegeszeilen, Erinnerungen, Boss-Intro */
+    val questTexts: Boolean = true,
+    /** Tagesbriefing des Spielleiters auf dem Board */
+    val briefing: Boolean = true,
+    /** Heldensaga im Wochenrückblick */
+    val saga: Boolean = true,
+) {
+    val ready: Boolean get() = enabled && baseUrl.isNotBlank() && model.isNotBlank()
+}
 
 /** Chaos-Kammer: alles standardmäßig aus, einzeln einschaltbar. */
 @Serializable

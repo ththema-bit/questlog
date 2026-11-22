@@ -76,8 +76,8 @@ object Pal {
 }
 
 object Fonts {
-    val fraktur = FontFamily(Font(R.font.jacquard24))
-    val frakturBig = FontFamily(Font(R.font.jacquard12))
+    /** Überschriften (werden über H() gerastert). Zum Tauschen: hier und in HeadingRaster.fontRes. */
+    val heading = FontFamily(Font(R.font.cinzel_decorative_bold))
 
     @OptIn(ExperimentalTextApi::class)
     val pixel = FontFamily(
@@ -110,15 +110,14 @@ private fun style(family: FontFamily, size: TextUnit, line: TextUnit, weight: Fo
     TextStyle(fontFamily = family, fontSize = size, lineHeight = line, fontWeight = weight, letterSpacing = spacing, color = Pal.bone)
 
 fun qType(cursed: Boolean): QType {
-    val fr = if (cursed) Fonts.comic else Fonts.fraktur
-    val frBig = if (cursed) Fonts.comic else Fonts.frakturBig
+    val fr = if (cursed) Fonts.comic else Fonts.heading
     val px = if (cursed) Fonts.comic else Fonts.pixel
     val num = if (cursed) Fonts.comic else Fonts.numbers
     val lab = if (cursed) Fonts.comic else Fonts.label
     return QType(
-        logo = style(frBig, 46.sp, 46.sp),
-        title = style(fr, 32.sp, 34.sp),
-        heading = style(fr, 25.sp, 28.sp),
+        logo = style(fr, 40.sp, 44.sp),
+        title = style(fr, 27.sp, 31.sp),
+        heading = style(fr, 21.sp, 25.sp),
         quest = style(px, 17.sp, 21.sp, FontWeight.SemiBold),
         body = style(px, 15.sp, 21.sp),
         bodyBold = style(px, 15.sp, 21.sp, FontWeight.SemiBold),

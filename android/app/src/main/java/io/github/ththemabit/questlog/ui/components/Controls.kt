@@ -34,6 +34,9 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.input.KeyboardCapitalization
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import io.github.ththemabit.questlog.ui.pixel.Btn
@@ -42,6 +45,7 @@ import io.github.ththemabit.questlog.ui.pixel.Frames
 import io.github.ththemabit.questlog.ui.pixel.LocalPx
 import io.github.ththemabit.questlog.ui.pixel.PixelButton
 import io.github.ththemabit.questlog.ui.pixel.PixelIcon
+import io.github.ththemabit.questlog.ui.pixel.H
 import io.github.ththemabit.questlog.ui.pixel.T
 import io.github.ththemabit.questlog.ui.pixel.bevel
 import io.github.ththemabit.questlog.ui.pixel.parchmentCard
@@ -65,6 +69,11 @@ fun PixelField(
     singleLine: Boolean = true,
     minLines: Int = 1,
     label: String? = null,
+    maxLines: Int = Int.MAX_VALUE,
+    /** Passwort-Feld (API-Schlüssel): Punkte statt Zeichen, keine Vorschläge */
+    secret: Boolean = false,
+    /** Adressfeld: URL-Tastatur ohne Großschreibung */
+    url: Boolean = false,
 ) {
     val u = LocalPx.current
     Column(modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(4.dp)) {
@@ -74,9 +83,15 @@ fun PixelField(
             onValueChange = onChange,
             singleLine = singleLine,
             minLines = minLines,
+            maxLines = if (singleLine) 1 else maxLines,
             textStyle = Q.type.body.copy(color = Pal.ink),
             cursorBrush = SolidColor(Pal.ink),
-            keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences),
+            visualTransformation = if (secret) PasswordVisualTransformation() else VisualTransformation.None,
+            keyboardOptions = when {
+                secret -> KeyboardOptions(keyboardType = KeyboardType.Password, autoCorrectEnabled = false)
+                url -> KeyboardOptions(keyboardType = KeyboardType.Uri, capitalization = KeyboardCapitalization.None, autoCorrectEnabled = false)
+                else -> KeyboardOptions(capitalization = KeyboardCapitalization.Sentences)
+            },
             modifier = Modifier.fillMaxWidth().semantics { contentDescription = label ?: placeholder },
             decorationBox = { inner ->
                 Box(Modifier.fillMaxWidth().drawBehind { bevel(u, inset, pressed = true) }.padding(horizontal = 12.dp, vertical = 11.dp)) {
@@ -204,7 +219,7 @@ fun CalendarGrid(initial: LocalDate, selected: LocalDate?, min: LocalDate?, max:
     Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(6.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             PixelButton("‹", { month = month.minusMonths(1) }, kind = Btn.STONE, small = true)
-            T(month.format(DateTimeFormatter.ofPattern("MMMM yyyy", Locale.GERMAN)), Q.type.heading, Modifier.weight(1f), color = Pal.ink, align = TextAlign.Center)
+            H(month.format(DateTimeFormatter.ofPattern("MMMM yyyy", Locale.GERMAN)), Q.type.heading, Modifier.weight(1f), color = Pal.ink, align = TextAlign.Center)
             PixelButton("›", { month = month.plusMonths(1) }, kind = Btn.STONE, small = true)
         }
         Row {
@@ -254,7 +269,7 @@ fun ParchSection(title: String, icon: String? = null, modifier: Modifier = Modif
                 PixelIcon(icon, 20.dp)
                 Spacer(Modifier.width(8.dp))
             }
-            T(title, Q.type.heading, color = Pal.ink)
+            H(title, Q.type.heading, color = Pal.ink)
         }
         content()
     }

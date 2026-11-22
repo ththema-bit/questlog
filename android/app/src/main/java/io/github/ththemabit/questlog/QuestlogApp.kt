@@ -2,6 +2,7 @@ package io.github.ththemabit.questlog
 
 import android.app.Application
 import android.content.Context
+import io.github.ththemabit.questlog.ai.AiService
 import io.github.ththemabit.questlog.data.Store
 import io.github.ththemabit.questlog.notify.Reminders
 import io.github.ththemabit.questlog.widget.QuestWidget
@@ -17,6 +18,8 @@ import kotlinx.coroutines.launch
 
 class QuestlogApp : Application() {
     val store: Store by lazy { Store(this) }
+    /** Optionaler KI-Spielleiter. Wird erst mit der Oberfläche gestartet, Benachrichtigungen brauchen ihn nicht. */
+    val ai: AiService by lazy { AiService(store) }
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
 
     @OptIn(FlowPreview::class)
@@ -33,5 +36,6 @@ class QuestlogApp : Application() {
 
     companion object {
         fun store(context: Context): Store = (context.applicationContext as QuestlogApp).store
+        fun ai(context: Context): AiService = (context.applicationContext as QuestlogApp).ai
     }
 }

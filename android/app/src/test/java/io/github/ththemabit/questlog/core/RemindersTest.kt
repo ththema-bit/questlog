@@ -32,4 +32,24 @@ class RemindersTest {
         val digest = Reminders.pending(save, Engine(zone).compute(save, at(8, 8)), 8)
         assertEquals(1, digest.count { it.key.startsWith("digest") })
     }
+
+    @Test
+    fun usesTextsOfTheGameMasterWhenThere() {
+        val q = Quest("bad", "Bad putzen", "bad", minDays = 4, maxDays = 9, createdAt = at(0, 8))
+        val texts = io.github.ththemabit.questlog.ai.QuestTexts(
+            io.github.ththemabit.questlog.ai.GameMaster.signature(q), "chronist",
+            intro = "Kalkdrachen!", reminder = "Die Kalkdrachen im Bad regen sich wieder.",
+        )
+        val base = SaveData(quests = listOf(q), events = listOf(Done("e1", at(0), "bad")))
+        val withTexts = base.copy(
+            settings = Settings(ai = AiConfig(enabled = true, baseUrl = "box:11434", model = "m")),
+            storyCache = mapOf(io.github.ththemabit.questlog.ai.GameMaster.textsKey("bad") to io.github.ththemabit.questlog.ai.GameMaster.encode(texts)),
+        )
+        val note = Reminders.pending(withTexts, Engine(zone).compute(withTexts, at(4, 10)), 10).first { it.key.startsWith("open-bad") }
+        assertEquals("Die Kalkdrachen im Bad regen sich wieder.", note.text)
+        // KI aus: wieder die Vorlage
+        val off = withTexts.copy(settings = withTexts.settings.copy(ai = withTexts.settings.ai.copy(enabled = false)))
+        val plain = Reminders.pending(off, Engine(zone).compute(off, at(4, 10)), 10).first { it.key.startsWith("open-bad") }
+        assertTrue(plain.text.contains("Bad putzen"))
+    }
 }

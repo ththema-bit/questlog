@@ -45,6 +45,7 @@ import io.github.ththemabit.questlog.ui.pixel.LocalPx
 import io.github.ththemabit.questlog.ui.pixel.PixelBar
 import io.github.ththemabit.questlog.ui.pixel.PixelIcon
 import io.github.ththemabit.questlog.ui.pixel.SectionTitle
+import io.github.ththemabit.questlog.ui.pixel.H
 import io.github.ththemabit.questlog.ui.pixel.T
 import io.github.ththemabit.questlog.ui.pixel.Tag
 import io.github.ththemabit.questlog.ui.pixel.parchmentCard
@@ -211,7 +212,7 @@ fun ChronicleScreen(state: AppState, nav: Nav) {
 private fun Header(title: String, total: Int, compare: String) {
     Row(verticalAlignment = Alignment.Bottom) {
         Column(Modifier.weight(1f)) {
-            T(title, Q.type.heading, color = Pal.gold0)
+            H(title, Q.type.heading, color = Pal.gold0)
             T(compare, Q.type.small, color = Pal.boneFaint)
         }
         T(Fmt.n(total), Q.type.numberBig, color = Pal.gold1)
@@ -273,7 +274,7 @@ fun GloryScreen(state: AppState, act: Actions, nav: Nav) {
                 PixelIcon(if (reached) "flame" else "lock", 22.dp, alpha = if (reached) 1f else 0.5f)
                 Spacer(Modifier.width(10.dp))
                 Column(Modifier.weight(1f)) {
-                    T(rank.name, Q.type.heading.copy(fontSize = Q.type.heading.fontSize * 0.85f), color = if (reached) Pal.gold0 else Pal.boneFaint)
+                    H(rank.name, Q.type.heading.copy(fontSize = Q.type.heading.fontSize * 0.85f), color = if (reached) Pal.gold0 else Pal.boneFaint)
                     T(rank.flavor, Q.type.small, color = Pal.boneDim)
                 }
                 T("ab Stufe ${rank.minLevel}", Q.type.label, color = Pal.boneFaint)
