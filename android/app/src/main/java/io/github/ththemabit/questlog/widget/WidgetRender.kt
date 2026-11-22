@@ -4,6 +4,7 @@ import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.Paint
 import android.graphics.Typeface
+import android.os.Build
 import android.text.StaticLayout
 import android.text.TextPaint
 import android.text.TextUtils
@@ -27,8 +28,6 @@ import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
-import androidx.core.content.res.ResourcesCompat
-import io.github.ththemabit.questlog.R
 import io.github.ththemabit.questlog.core.Categories
 import io.github.ththemabit.questlog.core.Persona
 import io.github.ththemabit.questlog.core.WindowStatus
@@ -63,22 +62,26 @@ class WidgetRender(
     /** Kunst-Pixel in Gerätepixeln, wie in der App */
     private val u: Int = pixelUnit(density).toInt()
     private val textScale = density * fontScale.coerceIn(0.85f, 1.3f)
-    private val pixelFace = font(R.font.pixelify_sans)
-    private val numberFace = font(R.font.jersey10)
-    private val labelFace = font(R.font.silkscreen)
+    // Wie in der App: Überschriften gerastert, alles andere in der normalen Systemschrift
+    private val textFace = sans(400)
+    private val boldFace = sans(600)
+    private val labelFace = sans(500)
+    private val numberFace = Typeface.create("sans-serif-condensed", Typeface.BOLD)
 
-    private fun font(id: Int): Typeface = runCatching { ResourcesCompat.getFont(context, id) }.getOrNull() ?: Typeface.DEFAULT
+    private fun sans(weight: Int): Typeface =
+        if (Build.VERSION.SDK_INT >= 28) Typeface.create(Typeface.SANS_SERIF, weight, false)
+        else Typeface.create(if (weight == 500) "sans-serif-medium" else "sans-serif", if (weight >= 600) Typeface.BOLD else Typeface.NORMAL)
 
     fun px(v: Dp): Int = (v.value * density).roundToInt()
     fun dpOf(px: Int): Dp = (px / density).dp
 
     /** Eine Schrift in einer Größe und Farbe. */
-    private inner class Ink(face: Typeface, sizeSp: Float, color: Color, weight: Int? = null) {
+    private inner class Ink(face: Typeface, sizeSp: Float, color: Color, spacing: Float = 0f) {
         val paint = TextPaint(Paint.ANTI_ALIAS_FLAG).apply {
             typeface = face
             textSize = sizeSp * textScale
             this.color = color.toArgb()
-            if (weight != null) fontVariationSettings = "'wght' $weight"
+            letterSpacing = spacing
         }
         private val fm = paint.fontMetrics
         val height: Int = ceil(fm.descent - fm.ascent).toInt()
@@ -180,12 +183,12 @@ class WidgetRender(
         val padX = 6 * u
         val top = 9 * u
         val bottom = h - 8 * u
-        val title = Ink(pixelFace, 15f, Pal.ink, 600)
-        val sub = Ink(pixelFace, 12f, Pal.inkSoft)
-        val glutInk = Ink(numberFace, 22f, Pal.ember3)
-        val streakInk = Ink(numberFace, 22f, Pal.ink)
-        val points = Ink(numberFace, 20f, Pal.gold3)
-        val note = Ink(pixelFace, 13f, Pal.inkSoft)
+        val title = Ink(boldFace, 15f, Pal.ink)
+        val sub = Ink(textFace, 12f, Pal.inkSoft)
+        val glutInk = Ink(numberFace, 20f, Pal.ember3)
+        val streakInk = Ink(numberFace, 20f, Pal.ink)
+        val points = Ink(numberFace, 18f, Pal.gold3)
+        val note = Ink(textFace, 13f, Pal.inkSoft)
         val kIcon = k(18f)
         val kSeal = k(30f)
         val kStat = k(16f)
@@ -256,7 +259,7 @@ class WidgetRender(
                 val ty = cy - (title.height + sub.height) / 2
                 title.draw(c, title.fit(qs.quest.title, textW), textX, ty)
                 val window = Fmt.window(qs) + if (qs.isBounty) " · Kopfgeld ×2" else ""
-                val subInk = if (qs.status == WindowStatus.OVERDUE) Ink(pixelFace, 12f, Pal.blood1) else Ink(pixelFace, 12f, Pal.leaf2)
+                val subInk = if (qs.status == WindowStatus.OVERDUE) Ink(textFace, 12f, Pal.blood1) else Ink(textFace, 12f, Pal.leaf2)
                 subInk.draw(c, subInk.fit(window, textW), textX, ty + title.height)
                 if (i < shown.size - 1) dots(textX, w - padX, y0 + rowH - u, Pal.parch3.copy(alpha = 0.6f))
             }
@@ -294,14 +297,14 @@ class WidgetRender(
         val streak = p.streak.toString()
         val kStat = k(20f)
         val statPx = 16 * kStat
-        var glutInk = Ink(numberFace, 32f, Pal.ember3)
-        var streakInk = Ink(numberFace, 24f, Pal.ink)
+        var glutInk = Ink(numberFace, 28f, Pal.ember3)
+        var streakInk = Ink(numberFace, 22f, Pal.ink)
         if (statPx * 2 + 4 * u + glutInk.width(glut) + streakInk.width(streak) > inner) {
-            glutInk = Ink(numberFace, 24f, Pal.ember3)
-            streakInk = Ink(numberFace, 20f, Pal.ink)
+            glutInk = Ink(numberFace, 22f, Pal.ember3)
+            streakInk = Ink(numberFace, 18f, Pal.ink)
         }
-        val label = Ink(labelFace, 9f, Pal.inkSoft)
-        val text = Ink(pixelFace, 12f, Pal.ink)
+        val label = Ink(labelFace, 10f, Pal.inkSoft, spacing = 0.06f)
+        val text = Ink(textFace, 12f, Pal.ink)
         val s = game.season
         val (line, fromAi) = greeting(state.save, game)
         val persona = Persona.active(state.save.settings)

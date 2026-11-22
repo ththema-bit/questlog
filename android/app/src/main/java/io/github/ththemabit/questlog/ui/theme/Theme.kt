@@ -5,11 +5,10 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.ExperimentalTextApi
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
-import androidx.compose.ui.text.font.FontVariation
+import androidx.compose.ui.text.font.DeviceFontFamilyName
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.em
@@ -79,15 +78,14 @@ object Fonts {
     /** Überschriften (werden über H() gerastert). Zum Tauschen: hier und in HeadingRaster.fontRes. */
     val heading = FontFamily(Font(R.font.cinzel_decorative_bold))
 
-    @OptIn(ExperimentalTextApi::class)
-    val pixel = FontFamily(
-        Font(R.font.pixelify_sans, FontWeight.Normal, variationSettings = FontVariation.Settings(FontVariation.weight(400))),
-        Font(R.font.pixelify_sans, FontWeight.Medium, variationSettings = FontVariation.Settings(FontVariation.weight(500))),
-        Font(R.font.pixelify_sans, FontWeight.SemiBold, variationSettings = FontVariation.Settings(FontVariation.weight(600))),
-        Font(R.font.pixelify_sans, FontWeight.Bold, variationSettings = FontVariation.Settings(FontVariation.weight(700))),
+    /** Alles außer Überschriften: die normale Systemschrift, auch klein gut lesbar. Zum Tauschen nur hier. */
+    val text: FontFamily = FontFamily.SansSerif
+
+    /** Zahlen: die schmale Systemschrift, damit große Werte nicht ausufern. */
+    val numbers = FontFamily(
+        Font(DeviceFontFamilyName("sans-serif-condensed"), FontWeight.Normal),
+        Font(DeviceFontFamilyName("sans-serif-condensed"), FontWeight.Bold),
     )
-    val numbers = FontFamily(Font(R.font.jersey10))
-    val label = FontFamily(Font(R.font.silkscreen))
     val comic = FontFamily(Font(R.font.comic_neue_bold))
 }
 
@@ -111,21 +109,20 @@ private fun style(family: FontFamily, size: TextUnit, line: TextUnit, weight: Fo
 
 fun qType(cursed: Boolean): QType {
     val fr = if (cursed) Fonts.comic else Fonts.heading
-    val px = if (cursed) Fonts.comic else Fonts.pixel
+    val tx = if (cursed) Fonts.comic else Fonts.text
     val num = if (cursed) Fonts.comic else Fonts.numbers
-    val lab = if (cursed) Fonts.comic else Fonts.label
     return QType(
         logo = style(fr, 40.sp, 44.sp),
         title = style(fr, 27.sp, 31.sp),
         heading = style(fr, 21.sp, 25.sp),
-        quest = style(px, 17.sp, 21.sp, FontWeight.SemiBold),
-        body = style(px, 15.sp, 21.sp),
-        bodyBold = style(px, 15.sp, 21.sp, FontWeight.SemiBold),
-        small = style(px, 13.sp, 17.sp),
-        label = style(lab, 10.sp, 13.sp, spacing = 0.06.em),
-        number = style(num, 26.sp, 26.sp),
-        numberBig = style(num, 40.sp, 40.sp),
-        numberHuge = style(num, 72.sp, 72.sp),
+        quest = style(tx, 16.sp, 21.sp, FontWeight.SemiBold),
+        body = style(tx, 15.sp, 21.sp),
+        bodyBold = style(tx, 15.sp, 21.sp, FontWeight.SemiBold),
+        small = style(tx, 13.sp, 18.sp),
+        label = style(tx, 11.sp, 14.sp, FontWeight.Medium, spacing = 0.06.em),
+        number = style(num, 24.sp, 26.sp, FontWeight.Bold),
+        numberBig = style(num, 36.sp, 40.sp, FontWeight.Bold),
+        numberHuge = style(num, 64.sp, 68.sp, FontWeight.Bold),
     )
 }
 

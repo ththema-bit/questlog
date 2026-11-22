@@ -188,7 +188,7 @@ fun OptionsScreen(state: AppState, act: Actions, nav: Nav, ui: UiController) {
             ParchSection("Über Questlog", icon = "quill") {
                 T("Version ${BuildConfig.VERSION_NAME}", Q.type.bodyBold, color = Pal.ink)
                 T("Offline, ohne Konto, ohne Werbung, ohne Tracking. Der KI-Spielleiter ist optional und spricht nur mit dem Server, den du einträgst.", Q.type.small, color = Pal.inkSoft)
-                T("Schriften: Cinzel Decorative, Jersey, Pixelify Sans, Silkscreen, Comic Neue (SIL Open Font License). Pixelgrafiken und Klänge: eigene.", Q.type.small, color = Pal.inkSoft)
+                T("Schriften: Cinzel Decorative für Überschriften, Comic Neue für den Fluch (SIL Open Font License), sonst die Systemschrift. Pixelgrafiken und Klänge: eigene.", Q.type.small, color = Pal.inkSoft)
             }
         }
         item {
