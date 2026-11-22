@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <!-- Erinnerungen (Android 13+ fragt nach) -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <!-- Haptik beim Abhaken -->
+    <uses-permission android:name="android.permission.VIBRATE" />
+    <!-- Nur für den Kampfschrei aus der Chaos-Kammer, wird erst beim Einschalten gefragt -->
+    <uses-permission android:name="android.permission.RECORD_AUDIO" />
+
+    <application
+        android:name=".QuestlogApp"
+        android:allowBackup="true"
+        android:icon="@mipmap/ic_launcher"
+        android:label="@string/app_name"
+        android:supportsRtl="true"
+        android:theme="@style/Theme.Questlog">
+
+        <activity
+            android:name=".MainActivity"
+            android:exported="true"
+            android:launchMode="singleTask"
+            android:screenOrientation="portrait"
+            android:windowSoftInputMode="adjustResize">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+
+        <!-- Erledigt / Mini direkt aus der Benachrichtigung -->
+        <receiver
+            android:name=".notify.QuestActionReceiver"
+            android:exported="false" />
+
+        <!-- Homescreen-Widget -->
+        <receiver
+            android:name=".widget.QuestWidgetReceiver"
+            android:exported="true"
+            android:label="@string/widget_name">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/quest_widget_info" />
+        </receiver>
+    </application>
+
+</manifest>

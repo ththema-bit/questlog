@@ -1,0 +1,5 @@
+<resources>
+    <string name="app_name">Questlog</string>
+    <string name="widget_name">Questlog: Dringende Quests</string>
+    <string name="widget_description">Die dringendsten Quests, abhaken mit einem Tipp</string>
+</resources>

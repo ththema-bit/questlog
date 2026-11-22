@@ -1,0 +1,22 @@
+# Gradle / Android Studio
+.gradle/
+build/
+local.properties
+.idea/
+*.iml
+captures/
+.cxx/
+.kotlin/
+
+# Gebaute Pakete
+*.apk
+*.aab
+
+# Screenshot-Tests (Roborazzi) erzeugen Bilder lokal
+android/app/build/
+**/roborazzi/
+
+# Signatur-Schluessel: niemals committen
+keystore.properties
+*.jks
+*.keystore
