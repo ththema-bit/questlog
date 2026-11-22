@@ -323,12 +323,14 @@ fun DrawScope.parchment(u: Float, seed: Int, tex: ImageBitmap?, dust: Int = 0, t
     }
 }
 
+/** Pergament-Körnung in Gerätepixeln (auch für Widgets, die ohne Compose gezeichnet werden). */
+fun parchmentTex(u: Float): ImageBitmap =
+    Textures.noise("parch", u, Pal.parch1, listOf(Pal.parch0 to 26, Pal.parch2 to 22, Pal.parch3.copy(alpha = 0.4f) to 3))
+
 @Composable
 fun parchmentTexture(): ImageBitmap {
     val u = LocalPx.current
-    return remember(u) {
-        Textures.noise("parch", u, Pal.parch1, listOf(Pal.parch0 to 26, Pal.parch2 to 22, Pal.parch3.copy(alpha = 0.4f) to 3))
-    }
+    return remember(u) { parchmentTex(u) }
 }
 
 @Composable
@@ -338,23 +340,26 @@ fun Modifier.parchmentCard(seed: Int, dust: Int = 0, tint: Color? = null): Modif
     return this.drawBehind { parchment(u, seed, tex, dust, tint) }
 }
 
+/** Holzstab einer Schriftrolle, 7 Kunst-Pixel hoch, über die ganze Breite. */
+fun DrawScope.scrollRod(u: Float) {
+    val w = size.width
+    // Papierrolle
+    val rows = listOf(Pal.edge, Pal.parch0, Pal.parch1, Pal.parch2, Pal.parch3, Pal.burn, Pal.edge)
+    rows.forEachIndexed { i, c -> drawRect(c, Offset(3 * u, i * u), Size(w - 6 * u, u)) }
+    // Knäufe
+    for (x in listOf(0f, w - 3 * u)) {
+        drawRect(Pal.edge, Offset(x, u), Size(3 * u, 5 * u))
+        drawRect(Pal.wood2, Offset(x + u * 0, 2 * u), Size(3 * u, u))
+        drawRect(Pal.wood1, Offset(x, 3 * u), Size(3 * u, 2 * u))
+        drawRect(Pal.gold1, Offset(x + u, 2 * u), Size(u, u))
+    }
+}
+
 /** Holzstab einer Schriftrolle (oben/unten). */
 @Composable
 fun ScrollRod(modifier: Modifier = Modifier) {
     val u = LocalPx.current
-    Canvas(modifier.fillMaxWidth().height(with(LocalDensity.current) { (7 * u).toDp() })) {
-        val w = size.width
-        // Papierrolle
-        val rows = listOf(Pal.edge, Pal.parch0, Pal.parch1, Pal.parch2, Pal.parch3, Pal.burn, Pal.edge)
-        rows.forEachIndexed { i, c -> drawRect(c, Offset(3 * u, i * u), Size(w - 6 * u, u)) }
-        // Knäufe
-        for (x in listOf(0f, w - 3 * u)) {
-            drawRect(Pal.edge, Offset(x, u), Size(3 * u, 5 * u))
-            drawRect(Pal.wood2, Offset(x + u * 0, 2 * u), Size(3 * u, u))
-            drawRect(Pal.wood1, Offset(x, 3 * u), Size(3 * u, 2 * u))
-            drawRect(Pal.gold1, Offset(x + u, 2 * u), Size(u, u))
-        }
-    }
+    Canvas(modifier.fillMaxWidth().height(with(LocalDensity.current) { (7 * u).toDp() })) { scrollRod(u) }
 }
 
 /** Große Schriftrolle mit Stäben oben und unten. */

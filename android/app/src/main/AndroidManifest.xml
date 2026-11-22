@@ -36,7 +36,7 @@
             android:name=".notify.QuestActionReceiver"
             android:exported="false" />
 
-        <!-- Homescreen-Widget -->
+        <!-- Homescreen-Widgets als Schriftrollen -->
         <receiver
             android:name=".widget.QuestWidgetReceiver"
             android:exported="true"
@@ -47,6 +47,17 @@
             <meta-data
                 android:name="android.appwidget.provider"
                 android:resource="@xml/quest_widget_info" />
+        </receiver>
+        <receiver
+            android:name=".widget.GlutWidgetReceiver"
+            android:exported="true"
+            android:label="@string/glut_widget_name">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/glut_widget_info" />
         </receiver>
     </application>
 

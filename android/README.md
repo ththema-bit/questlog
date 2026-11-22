@@ -41,9 +41,17 @@ Voraussetzungen: JDK 17 oder neuer und das Android-SDK (Plattform 36). Am einfac
 | `ui/theme/` | Farben und Schriften |
 | `ui/screens/`, `ui/components/` | Screens und Bausteine |
 | `notify/` | Erinnerungen (WorkManager) und Aktionen aus der Benachrichtigung |
-| `widget/` | Homescreen-Widget (Glance) |
+| `widget/` | Homescreen-Widgets (Glance) als Schriftrollen: Questrolle und Glutrolle, gezeichnet von `WidgetRender` |
 
-`tools/gen_assets.py` erzeugt App-Icon, Benachrichtigungs-Icon und Widget-Bilder aus den Pixel-Icons in `ui/pixel/IconArt.kt` (Python mit Pillow).
+`tools/gen_assets.py` erzeugt App-Icon und Benachrichtigungs-Icon aus den Pixel-Icons in `ui/pixel/IconArt.kt`.
+
+Die Vorschaubilder der Widgets (`res/drawable-nodpi/widget_preview_*.png`) entstehen aus demselben Code wie die Widgets. Nach Änderungen am Widget-Look neu erzeugen:
+
+```bash
+QUESTLOG_WRITE_PREVIEWS=1 ./gradlew recordPaparazziDebug --tests '*WidgetShots*'
+```
+
+Unter Windows vorher `set QUESTLOG_WRITE_PREVIEWS=1`, dann `gradlew recordPaparazziDebug --tests "*WidgetShots*"`.
 
 Der Spielstand liegt in `files/questlog.json` im App-Speicher. Backup und Einspielen gehen über Optionen → Sicherung.
 

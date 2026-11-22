@@ -2,122 +2,123 @@ package io.github.ththemabit.questlog.widget
 
 import android.content.Context
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.glance.GlanceId
 import androidx.glance.GlanceModifier
-import androidx.glance.Image
 import androidx.glance.ImageProvider
+import androidx.glance.LocalSize
 import androidx.glance.action.ActionParameters
 import androidx.glance.action.actionParametersOf
 import androidx.glance.action.actionStartActivity
 import androidx.glance.action.clickable
 import androidx.glance.appwidget.GlanceAppWidget
 import androidx.glance.appwidget.GlanceAppWidgetReceiver
+import androidx.glance.appwidget.SizeMode
 import androidx.glance.appwidget.action.ActionCallback
 import androidx.glance.appwidget.action.actionRunCallback
-import androidx.glance.appwidget.lazy.LazyColumn
-import androidx.glance.appwidget.lazy.items
 import androidx.glance.appwidget.provideContent
 import androidx.glance.appwidget.updateAll
 import androidx.glance.background
-import androidx.glance.layout.Alignment
+import androidx.glance.layout.Box
 import androidx.glance.layout.Column
+import androidx.glance.layout.ContentScale
 import androidx.glance.layout.Row
-import androidx.glance.layout.Spacer
+import androidx.glance.layout.fillMaxHeight
 import androidx.glance.layout.fillMaxSize
 import androidx.glance.layout.fillMaxWidth
 import androidx.glance.layout.height
-import androidx.glance.layout.padding
-import androidx.glance.layout.size
 import androidx.glance.layout.width
-import androidx.glance.text.FontWeight
-import androidx.glance.text.Text
-import androidx.glance.text.TextStyle
-import androidx.glance.unit.ColorProvider
+import androidx.glance.semantics.contentDescription
+import androidx.glance.semantics.semantics
 import io.github.ththemabit.questlog.MainActivity
 import io.github.ththemabit.questlog.QuestlogApp
-import io.github.ththemabit.questlog.R
-import io.github.ththemabit.questlog.core.QuestState
-import io.github.ththemabit.questlog.core.WindowStatus
 import io.github.ththemabit.questlog.data.AppState
-import io.github.ththemabit.questlog.ui.Fmt
+import io.github.ththemabit.questlog.data.Store
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.distinctUntilChangedBy
+import kotlinx.coroutines.flow.filterNotNull
 
-/** Homescreen-Widget (F04): die dringendsten Quests, Abhaken mit einem Tipp. */
+/*
+ * Homescreen-Widgets als Schriftrollen. Das Bild zeichnet WidgetRender, hier liegen nur
+ * unsichtbare Tippflächen darüber. Der Spielstand wird während der Sitzung beobachtet, damit
+ * ein Tipp aufs Siegel sofort sichtbar wird.
+ */
+
+/** Spielstand-Änderungen, ohne das Weiterticken der Uhr (das würde die Bilder ständig neu zeichnen). */
+private fun changes(store: Store): Flow<AppState> =
+    store.state.filterNotNull().distinctUntilChangedBy { it.save to it.game.today }
+
+/** Questrolle (F04): die dringendsten Quests, abhaken mit dem Wachssiegel. */
 class QuestWidget : GlanceAppWidget() {
+    override val sizeMode: SizeMode = SizeMode.Exact
+
     override suspend fun provideGlance(context: Context, id: GlanceId) {
         val store = QuestlogApp.store(context)
         store.refresh()
-        val state = store.awaitState()
-        provideContent { Content(state) }
+        val first = store.awaitState()
+        val render = WidgetRender(context)
+        provideContent {
+            val state by remember { changes(store) }.collectAsState(first)
+            val size = LocalSize.current
+            QuestScrollContent(render, render.questScroll(state, render.px(size.width), render.px(size.height)))
+        }
     }
 
     companion object {
+        /** Beide Widgets neu zeichnen. */
         suspend fun refresh(context: Context) {
             runCatching { QuestWidget().updateAll(context) }
-        }
-    }
-}
-
-private val stone = Color(0xFF221A13)
-private val parchment = Color(0xFFE6CF98)
-private val ink = Color(0xFF2A1709)
-private val inkSoft = Color(0xFF5B3A1E)
-private val gold = Color(0xFFFFE28F)
-private val ember = Color(0xFFFFC23D)
-private val red = Color(0xFFA62B1C)
-private val green = Color(0xFF2F5A22)
-
-@Composable
-private fun Content(state: AppState) {
-    val game = state.game
-    val list = (game.board.overdue + game.board.open).take(5)
-    Column(GlanceModifier.fillMaxSize().background(stone).padding(10.dp)) {
-        Row(
-            GlanceModifier.fillMaxWidth().clickable(actionStartActivity<MainActivity>()),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Image(ImageProvider(R.drawable.px_flame), "Glut", GlanceModifier.size(20.dp))
-            Spacer(GlanceModifier.width(4.dp))
-            Text(Fmt.n(game.player.glut), style = TextStyle(color = ColorProvider(ember), fontSize = 15.sp, fontWeight = FontWeight.Bold))
-            Spacer(GlanceModifier.width(10.dp))
-            Image(ImageProvider(R.drawable.px_shield), "Serie", GlanceModifier.size(18.dp))
-            Spacer(GlanceModifier.width(4.dp))
-            Text("${game.player.streak}", style = TextStyle(color = ColorProvider(gold), fontSize = 15.sp, fontWeight = FontWeight.Bold))
-            Spacer(GlanceModifier.defaultWeight())
-            Text("QUESTLOG", style = TextStyle(color = ColorProvider(gold), fontSize = 12.sp, fontWeight = FontWeight.Bold))
-        }
-        Spacer(GlanceModifier.height(6.dp))
-        if (list.isEmpty()) {
-            Text("Alles erledigt. Die Glut brennt.", style = TextStyle(color = ColorProvider(gold), fontSize = 13.sp))
-        } else {
-            LazyColumn {
-                items(list, itemId = { it.quest.id.hashCode().toLong() }) { qs -> QuestRow(qs) }
-            }
+            runCatching { GlutWidget().updateAll(context) }
         }
     }
 }
 
 @Composable
-private fun QuestRow(qs: QuestState) {
-    Column {
-        Row(
-            GlanceModifier.fillMaxWidth().background(parchment).padding(horizontal = 8.dp, vertical = 5.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Column(GlanceModifier.defaultWeight().clickable(actionStartActivity<MainActivity>(actionParametersOf(questKey to qs.quest.id)))) {
-                Text(qs.quest.title, style = TextStyle(color = ColorProvider(ink), fontSize = 14.sp, fontWeight = FontWeight.Bold), maxLines = 1)
-                Text(Fmt.window(qs), style = TextStyle(color = ColorProvider(if (qs.status == WindowStatus.OVERDUE) red else green), fontSize = 11.sp), maxLines = 1)
+private fun QuestScrollContent(r: WidgetRender, s: WidgetRender.QuestScroll) {
+    val openApp = actionStartActivity<MainActivity>()
+    Box(GlanceModifier.fillMaxSize().background(ImageProvider(s.bitmap), ContentScale.FillBounds)) {
+        Column(GlanceModifier.fillMaxSize()) {
+            Box(GlanceModifier.fillMaxWidth().height(r.dpOf(s.headerHeight)).clickable(openApp).semantics { contentDescription = s.summary }) {}
+            for (row in s.rows) {
+                Row(GlanceModifier.fillMaxWidth().height(r.dpOf(s.rowHeight))) {
+                    Box(
+                        GlanceModifier.defaultWeight().fillMaxHeight()
+                            .clickable(actionStartActivity<MainActivity>(actionParametersOf(questKey to row.id)))
+                            .semantics { contentDescription = row.label },
+                    ) {}
+                    Box(
+                        GlanceModifier.width(r.dpOf(s.sealZone)).fillMaxHeight()
+                            .clickable(actionRunCallback<CompleteAction>(actionParametersOf(questKey to row.id)))
+                            .semantics { contentDescription = "${row.title} erledigen" },
+                    ) {}
+                }
             }
-            Text("+${qs.preview}", style = TextStyle(color = ColorProvider(inkSoft), fontSize = 12.sp))
-            Spacer(GlanceModifier.width(6.dp))
-            Image(
-                ImageProvider(R.drawable.px_seal), "${qs.quest.title} erledigen",
-                GlanceModifier.size(34.dp).clickable(actionRunCallback<CompleteAction>(actionParametersOf(questKey to qs.quest.id))),
-            )
+            Box(GlanceModifier.fillMaxWidth().defaultWeight().clickable(openApp)) {}
         }
-        Spacer(GlanceModifier.height(4.dp))
+    }
+}
+
+/** Glutrolle: Glut, Serie, Stufe, Wochenziel und ein Wort vom Spielleiter oder Erzähler. */
+class GlutWidget : GlanceAppWidget() {
+    override val sizeMode: SizeMode = SizeMode.Exact
+
+    override suspend fun provideGlance(context: Context, id: GlanceId) {
+        val store = QuestlogApp.store(context)
+        store.refresh()
+        val first = store.awaitState()
+        val render = WidgetRender(context)
+        provideContent {
+            val state by remember { changes(store) }.collectAsState(first)
+            val size = LocalSize.current
+            val s = render.glutScroll(state, render.px(size.width), render.px(size.height))
+            Box(
+                GlanceModifier.fillMaxSize().background(ImageProvider(s.bitmap), ContentScale.FillBounds)
+                    .clickable(actionStartActivity<MainActivity>())
+                    .semantics { contentDescription = s.summary },
+            ) {}
+        }
     }
 }
 
@@ -136,4 +137,8 @@ class CompleteAction : ActionCallback {
 
 class QuestWidgetReceiver : GlanceAppWidgetReceiver() {
     override val glanceAppWidget: GlanceAppWidget = QuestWidget()
+}
+
+class GlutWidgetReceiver : GlanceAppWidgetReceiver() {
+    override val glanceAppWidget: GlanceAppWidget = GlutWidget()
 }

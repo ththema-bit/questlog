@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
-"""Erzeugt App-Icon, Benachrichtigungs-Icon und Widget-Bilder aus den Pixel-Icons in IconArt.kt.
+"""Erzeugt App-Icon und Benachrichtigungs-Icon aus den Pixel-Icons in IconArt.kt.
+Die Widgets zeichnet die App selbst (widget/WidgetRender.kt), ihre Vorschaubilder schreibt der WidgetShots-Test.
 Aufruf aus Questlog/android:  python3 tools/gen_assets.py   (braucht Pillow für die PNGs)"""
 import os, re
-from PIL import Image
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SRC = os.path.join(ROOT, "app/src/main/java/io/github/ththemabit/questlog/ui/pixel/IconArt.kt")
@@ -63,15 +63,4 @@ write(f"{RES}/drawable/ic_launcher_background.xml", "\n".join(bg))
 # Benachrichtigung: weiße Silhouette, 24dp
 write(f"{RES}/drawable/ic_notification.xml", vector(flame, 24, 16, 0, 1, mono="#FFFFFFFF"))
 
-# Widget-Icons als scharfe PNGs (nearest neighbour, nodpi)
-os.makedirs(f"{RES}/drawable-nodpi", exist_ok=True)
-for name in ["seal", "flame", "shield", "check", "scroll", "coin"]:
-    g = ICONS[name]
-    im = Image.new("RGBA", (16, 16), (0, 0, 0, 0))
-    for y, row in enumerate(g):
-        for x, c in enumerate(row):
-            if c != '.':
-                v = int(PAL[c], 16)
-                im.putpixel((x, y), ((v >> 16) & 255, (v >> 8) & 255, v & 255, 255))
-    im.resize((96, 96), Image.NEAREST).save(f"{RES}/drawable-nodpi/px_{name}.png")
 print("ok")

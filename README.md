@@ -16,6 +16,7 @@ Die App läuft komplett ohne KI, offline und ohne Konto. Als Bonus lässt sie si
 - **Modifier-Karten** (über Level freigeschaltet): Soundtrack, Telefonjoker, Handy weg, Drei-Song-Challenge, Blind Date, Doppelt oder nichts, Hardcore-Woche, Sportreporter, Tanzpause mit Bewegungssensor.
 - **Chaos-Kammer** (alles einzeln schaltbar, standardmäßig aus): Comic-Sans-Fluch, Erzähler-Stimmen, Nemesis Gerald, Faulheitssteuer-Bescheid, Wollmäuse, Quest-Hochzeiten, Heldensaga, Abspann nach Bossen, absurde Feiertage, Kampfschrei-Abhaken.
 - **KI-Spielleiter (optional):** Agent, der aus Erzähltem Quests baut, ändert oder archiviert (nur mit Häkchen), Questtexte und Siegeszeilen je Quest, Tagesbriefing, Heldensaga aus den echten Wochenzahlen. Spricht jede OpenAI-kompatible Schnittstelle, Texte entstehen im Hintergrund, ohne Server gelten Vorlagen.
+- **Widgets als Schriftrollen:** Questrolle mit den dringendsten Quests (abhaken mit dem Wachssiegel) und Glutrolle mit Glut, Serie, Stufe, Wochenziel und einem Wort vom Spielleiter. Im selben Pixel-Look wie die App.
 - **Alltag:** Schnelleingabe aus Freitext, Vorlagen-Pakete, Erinnerungen mit Ruhezeit und Tageslimit, Abhaken aus der Benachrichtigung und per Widget, Nachtragen und Rückgängig, Statistik mit Heatmap, Backup als Datei.
 
 Die Feature-Liste stammt aus dem Brainstorming (50 Ideen in fünf Absurditätsstufen). Was davon umgesetzt ist und was noch kommt, steht in `DESIGN.md`.
@@ -28,3 +29,7 @@ Die Feature-Liste stammt aus dem Brainstorming (50 Ideen in fünf Absurditätsst
 | Board mit Tagesbriefing | Gespräch mit dem Spielleiter | Quest mit eigenem Text |
 |---|---|---|
 | ![](android/app/src/test/snapshots/images/io.github.ththemabit.questlog.ui_ScreenShots_boardAi.png) | ![](android/app/src/test/snapshots/images/io.github.ththemabit.questlog.ui_ScreenShots_master.png) | ![](android/app/src/test/snapshots/images/io.github.ththemabit.questlog.ui_ScreenShots_detailAi.png) |
+
+| Questrolle | Glutrolle |
+|---|---|
+| ![](android/app/src/main/res/drawable-nodpi/widget_preview_quests.png) | ![](android/app/src/main/res/drawable-nodpi/widget_preview_glut.png) |
